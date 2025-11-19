@@ -1,6 +1,6 @@
 // src/composables/useSync.js
 import { watch } from 'vue'
-import { ref, set, push } from 'firebase/database'
+import { ref, set, push, update } from 'firebase/database'
 import { db as dexieDB } from 'src/boot/dexie'
 import { firebaseConnected } from 'src/boot/firebaseConnection'
 import { db as realtimeDB } from 'src/boot/firebase'
@@ -62,18 +62,41 @@ export function useSync() {
           await dexieDB.credentials.update(cred.id, { synced: 'syncing' })
 
           const credRef = ref(realtimeDB, `credentials/${cred.userId}`)
-          await set(push(credRef), {
-            userId: cred.userId || 'unknown',
-            email: cred.email || '',
-            password: cred.password || '',
-            title: cred.title || '',
-            createdAt: cred.createdAt || Date.now(),
-          })
+
+          if (cred.syncAction === 'update' && cred.firebaseKey) {
+            // Update existing Firebase record
+            await update(ref(realtimeDB, `credentials/${cred.userId}/${cred.firebaseKey}`), {
+              email: cred.email || '',
+              platform: cred.platform || '',
+              password: cred.password || '',
+              username: cred.username || '',
+              updatedAt: Date.now(),
+            })
+            console.log(`[Sync] Updated Firebase record ${cred.firebaseKey}`)
+          } else {
+            // Create new Firebase record (default behavior)
+            const newCredRef = push(credRef)
+            await set(newCredRef, {
+              userId: cred.userId || 'unknown',
+              email: cred.email || '',
+              platform: cred.platform || '',
+              password: cred.password || '',
+              username: cred.username || '',
+              createdAt: cred.createdAt || Date.now(),
+            })
+
+            // Store the Firebase key for future updates
+            await dexieDB.credentials.update(cred.id, {
+              firebaseKey: newCredRef.key,
+              synced: true,
+            })
+            console.log(`[Sync] Created Firebase record ${newCredRef.key}`)
+            continue // Skip the next update since we already updated
+          }
 
           await dexieDB.credentials.update(cred.id, { synced: true })
           console.log(`[Sync] Synced credential ${cred.id}`)
         } catch (err) {
-          // revert to unsynced so it can retry later
           await dexieDB.credentials.update(cred.id, { synced: false })
           console.error(`[Sync] Failed to sync credential ${cred.id}:`, err)
         }

@@ -1,0 +1,28 @@
+//src/composables/usePlatforms.js
+
+export const socMeds = [
+  { name: 'facebook', title: 'Facebook', icon: 'fab fa-facebook-f', color: '#1877F2' },
+  { name: 'instagram', title: 'Instagram', icon: 'fab fa-instagram', color: '#E4405F' },
+  { name: 'tiktok', title: 'TikTok', icon: 'fab fa-tiktok', color: '#000000' },
+  { name: 'x', title: 'X / Twitter', icon: 'fab fa-x-twitter', color: '#000000' },
+  { name: 'twitter', title: 'Twitter', icon: 'fab fa-twitter', color: '#1DA1F2' },
+  { name: 'youtube', title: 'YouTube', icon: 'fab fa-youtube', color: '#FF0000' },
+  { name: 'snapchat', title: 'Snapchat', icon: 'fab fa-snapchat-ghost', color: '#FFFC00' },
+  { name: 'linkedin', title: 'LinkedIn', icon: 'fab fa-linkedin-in', color: '#0A66C2' },
+  { name: 'pinterest', title: 'Pinterest', icon: 'fab fa-pinterest', color: '#BD081C' },
+  { name: 'reddit', title: 'Reddit', icon: 'fab fa-reddit', color: '#FF4500' },
+  { name: 'whatsapp', title: 'WhatsApp', icon: 'fab fa-whatsapp', color: '#25D366' },
+  { name: 'messenger', title: 'Messenger', icon: 'fab fa-facebook-messenger', color: '#0084FF' },
+  { name: 'discord', title: 'Discord', icon: 'fab fa-discord', color: '#5865F2' },
+  { name: 'telegram', title: 'Telegram', icon: 'fab fa-telegram', color: '#26A5E4' },
+  { name: 'wechat', title: 'WeChat', icon: 'fab fa-weixin', color: '#7BB32E' },
+  { name: 'gcash', title: 'GCash', icon: 'credit_card', color: '#0066CC' },
+  { name: 'paymaya', title: 'PayMaya', icon: 'payment', color: '#00A651' },
+  { name: 'shopee', title: 'Shopee', icon: 'shopping_cart', color: '#EE4D2D' },
+  { name: 'lazada', title: 'Lazada', icon: 'storefront', color: '#0F156D' },
+  { name: 'grab', title: 'Grab', icon: 'local_taxi', color: '#00B14F' },
+  { name: 'netflix', title: 'Netflix', icon: 'movie', color: '#E50914' },
+  { name: 'spotify', title: 'Spotify', icon: 'music_note', color: '#1DB954' },
+  { name: 'gmail', title: 'Gmail', icon: 'mail', color: '#EA4335' },
+  { name: 'google', title: 'Google', icon: 'search', color: '#4285F4' },
+]

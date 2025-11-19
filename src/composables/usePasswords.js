@@ -22,7 +22,7 @@ export function usePasswords() {
   /**
    * Add credential locally and optionally sync to Firebase
    */
-  const addCredential = async (email, password, title) => {
+  const addCredential = async (email, password, username, platform) => {
     loading.value = true
     error.value = ''
     const createdAt = Date.now()
@@ -35,7 +35,8 @@ export function usePasswords() {
         userId,
         email,
         password: encryptedPassword,
-        title,
+        username,
+        platform,
         createdAt,
         synced: false,
       })
@@ -86,7 +87,7 @@ export function usePasswords() {
         userId: data[key].userId,
         email: data[key].email,
         password: decryptPin(data[key].password),
-        title: data[key].title,
+        username: data[key].username,
         createdAt: data[key].createdAt,
       }))
     } catch (err) {
@@ -106,14 +107,19 @@ export function usePasswords() {
           userId: cred.userId,
           email: cred.email,
           password: encryptPin(cred.password),
-          title: cred.title,
+          username: cred.username,
+          platform: cred.platform,
           createdAt: cred.createdAt,
+          firebaseKey: cred.id, // Store Firebase key
           synced: true,
         })
       }
     }
   }
 
+  /**
+   * Remove all credentials for current user
+   */
   const removeCredentials = async () => {
     loading.value = true
     error.value = ''
@@ -130,12 +136,55 @@ export function usePasswords() {
     }
   }
 
+  const removeCredential = async (id) => {
+    loading.value = true
+    error.value = ''
+    try {
+      await dexieDB.credentials.delete(id)
+      success('Credential removed successfully!')
+      return true
+    } catch (err) {
+      console.error('[Remove Credential] Error:', err)
+      error.value = err.message
+      notifyError(`Failed to remove credential: ${err.message}`)
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const editCred = async (id, email, password, username, platform) => {
+    loading.value = true
+    error.value = ''
+    try {
+      await dexieDB.credentials.update(id, {
+        email,
+        password: encryptPin(password),
+        username,
+        platform,
+        synced: false,
+        syncAction: 'update', // New field to track what action is needed
+      })
+      success('Credential edited successfully!')
+      return true
+    } catch (err) {
+      console.error('[Edit Credential] Error:', err)
+      error.value = err.message
+      notifyError(`Failed to edit credential: ${err.message}`)
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     addCredential,
     getCredentials,
     getCredsInFirebase,
     syncFromFirebaseToDexie,
     removeCredentials,
+    removeCredential,
+    editCred,
     loading,
     error,
   }
