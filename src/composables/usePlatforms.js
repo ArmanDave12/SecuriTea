@@ -25,4 +25,5 @@ export const socMeds = [
   { name: 'spotify', title: 'Spotify', icon: 'music_note', color: '#1DB954' },
   { name: 'gmail', title: 'Gmail', icon: 'mail', color: '#EA4335' },
   { name: 'google', title: 'Google', icon: 'search', color: '#4285F4' },
+  { name: 'other', title: 'Other', icon: 'info', color: '#000000' },
 ]

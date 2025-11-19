@@ -38,9 +38,9 @@
             />
             <span>Sync Data</span>
           </div>
-          <div class="action-btn" @click="showDebugInfo">
-            <q-icon name="bug_report" size="20px" />
-            <span>Debug</span>
+          <div class="action-btn" @click="showDecryptDialog">
+            <q-icon name="lock_open" size="20px" />
+            <span>Decrypt</span>
           </div>
         </div>
 
@@ -74,6 +74,84 @@
       </div>
     </q-dialog>
 
+    <!-- Decrypt Dialog -->
+    <q-dialog v-model="decryptDialog" persistent>
+      <div class="decrypt-popup">
+        <div class="popup-icon">🔓</div>
+        <div class="popup-title">Decrypt Password</div>
+        <div class="popup-text">Enter your secret key and encrypted data</div>
+
+        <q-input
+          v-model="secretKey"
+          placeholder="Enter your secret key..."
+          :type="showSecretKey ? 'text' : 'password'"
+          outlined
+          dark
+          color="blue-4"
+          class="decrypt-input q-mb-sm"
+          :error="hasSecretKeyError"
+          :error-message="secretKeyErrorMessage"
+          label="Secret Key"
+        >
+          <template v-slot:append>
+            <q-icon
+              :name="showSecretKey ? 'visibility_off' : 'visibility'"
+              class="cursor-pointer"
+              @click="showSecretKey = !showSecretKey"
+            />
+          </template>
+        </q-input>
+
+        <q-input
+          v-model="encryptedKey"
+          placeholder="Paste encrypted data here..."
+          type="textarea"
+          rows="3"
+          outlined
+          dark
+          color="blue-4"
+          class="decrypt-input q-mb-md"
+          :error="hasEncryptedKeyError"
+          :error-message="encryptedKeyErrorMessage"
+          label="Encrypted Data"
+        />
+
+        <div v-if="decryptedPassword" class="decrypted-result q-mb-md">
+          <div class="result-label">Decrypted Password:</div>
+          <div class="result-value">{{ decryptedPassword }}</div>
+          <q-btn
+            flat
+            round
+            icon="content_copy"
+            color="blue-4"
+            size="sm"
+            @click="copyToClipboard"
+            class="copy-btn"
+          />
+        </div>
+
+        <div class="decrypt-actions">
+          <q-btn
+            color="grey-7"
+            label="Cancel"
+            @click="closeDecryptDialog"
+            rounded
+            no-caps
+            class="action-btn-dialog"
+          />
+          <q-btn
+            color="primary"
+            label="Decrypt"
+            @click="performDecrypt"
+            rounded
+            no-caps
+            class="action-btn-dialog"
+            :loading="isDecrypting"
+          />
+        </div>
+      </div>
+    </q-dialog>
+
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="loading-screen">
       <q-spinner-ios color="white" size="24px" />
@@ -83,17 +161,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { usePasswords } from 'src/composables/usePasswords'
+import CryptoJS from 'crypto-js'
 
 const { syncFromFirebaseToDexie, removeCredentials } = usePasswords()
 const $q = useQuasar()
 const welcomeDialog = ref(false)
+const decryptDialog = ref(false)
 const isLoading = ref(true)
 const isSyncing = ref(false)
+const isDecrypting = ref(false)
+const secretKey = ref('')
+const encryptedKey = ref('')
+const decryptedPassword = ref('')
+const showSecretKey = ref(false)
+const hasSecretKeyError = ref(false)
+const secretKeyErrorMessage = ref('')
+const hasEncryptedKeyError = ref(false)
+const encryptedKeyErrorMessage = ref('')
 const router = useRouter()
+
+// Dynamic decrypt function using user-provided secret key
+const decryptWithCustomKey = (encryptedData, customSecretKey) => {
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedData, customSecretKey)
+    const decryptedText = bytes.toString(CryptoJS.enc.Utf8)
+    if (!decryptedText) {
+      throw new Error('Invalid secret key or corrupted data')
+    }
+    return decryptedText
+  } catch (error) {
+    throw new Error('Decryption failed: Invalid secret key or corrupted data')
+  }
+}
 
 onMounted(async () => {
   console.log('Secret page mounted')
@@ -132,8 +235,6 @@ const onSecretButtonClick = async () => {
       timeout: 1000,
     })
 
-    // await new Promise((resolve) => setTimeout(resolve, 2000))
-
     await syncFromFirebaseToDexie()
     $q.notify({
       color: 'positive',
@@ -153,13 +254,120 @@ const onSecretButtonClick = async () => {
   }
 }
 
-const showDebugInfo = () => {
-  $q.notify({
-    color: 'info',
-    position: 'center',
-    message: `Device: ${window.innerWidth}x${window.innerHeight}px`,
-    timeout: 3000,
-  })
+const showDecryptDialog = () => {
+  decryptDialog.value = true
+  // Reset state when opening dialog
+  secretKey.value = ''
+  encryptedKey.value = ''
+  decryptedPassword.value = ''
+  showSecretKey.value = false
+  hasSecretKeyError.value = false
+  secretKeyErrorMessage.value = ''
+  hasEncryptedKeyError.value = false
+  encryptedKeyErrorMessage.value = ''
+}
+
+const closeDecryptDialog = () => {
+  decryptDialog.value = false
+  // Clear sensitive data when closing
+  secretKey.value = ''
+  encryptedKey.value = ''
+  decryptedPassword.value = ''
+  showSecretKey.value = false
+  hasSecretKeyError.value = false
+  secretKeyErrorMessage.value = ''
+  hasEncryptedKeyError.value = false
+  encryptedKeyErrorMessage.value = ''
+}
+
+const performDecrypt = async () => {
+  // Reset error states
+  hasSecretKeyError.value = false
+  secretKeyErrorMessage.value = ''
+  hasEncryptedKeyError.value = false
+  encryptedKeyErrorMessage.value = ''
+
+  // Validate inputs
+  let hasErrors = false
+
+  if (!secretKey.value.trim()) {
+    hasSecretKeyError.value = true
+    secretKeyErrorMessage.value = 'Please enter your secret key'
+    hasErrors = true
+  }
+
+  if (!encryptedKey.value.trim()) {
+    hasEncryptedKeyError.value = true
+    encryptedKeyErrorMessage.value = 'Please enter encrypted data'
+    hasErrors = true
+  }
+
+  if (hasErrors) return
+
+  isDecrypting.value = true
+
+  try {
+    // Small delay for UX
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    const result = decryptWithCustomKey(encryptedKey.value.trim(), secretKey.value.trim())
+
+    decryptedPassword.value = result
+
+    $q.notify({
+      color: 'positive',
+      position: 'top',
+      message: 'Password decrypted successfully! 🔓',
+      timeout: 2000,
+    })
+  } catch (error) {
+    console.error('Decryption error:', error)
+
+    // Check if it's likely a wrong secret key vs corrupted data
+    if (error.message.includes('Invalid secret key')) {
+      hasSecretKeyError.value = true
+      secretKeyErrorMessage.value = 'Incorrect secret key'
+    } else {
+      hasEncryptedKeyError.value = true
+      encryptedKeyErrorMessage.value = 'Invalid encrypted data format'
+    }
+
+    $q.notify({
+      color: 'negative',
+      position: 'top',
+      message: 'Decryption failed. Check your inputs.',
+      timeout: 2500,
+    })
+  } finally {
+    isDecrypting.value = false
+  }
+}
+
+const copyToClipboard = async () => {
+  try {
+    await navigator.clipboard.writeText(decryptedPassword.value)
+    $q.notify({
+      color: 'positive',
+      position: 'top',
+      message: 'Password copied to clipboard! 📋',
+      timeout: 1500,
+    })
+  } catch (error) {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea')
+    textArea.value = decryptedPassword.value
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+
+    $q.notify({
+      color: 'positive',
+      position: 'top',
+      message: 'Password copied! 📋',
+      timeout: 1500,
+    })
+  }
 }
 
 const showClearData = () => {
@@ -390,6 +598,76 @@ const goBack = async () => {
   min-width: 120px;
 }
 
+/* Decrypt Popup */
+.decrypt-popup {
+  background: #1f2937;
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  color: white;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.decrypt-input {
+  margin-top: 16px;
+}
+
+.decrypt-input :deep(.q-field__control) {
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+}
+
+.decrypt-input :deep(.q-field__native) {
+  color: white;
+}
+
+.decrypt-input :deep(.q-placeholder) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.decrypted-result {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+}
+
+.result-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.result-value {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: #22c55e;
+  word-break: break-all;
+  padding-right: 40px;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(59, 130, 246, 0.15);
+  backdrop-filter: blur(8px);
+}
+
+.decrypt-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.action-btn-dialog {
+  flex: 1;
+  min-width: 100px;
+}
+
 /* Loading Screen */
 .loading-screen {
   position: absolute;
@@ -439,7 +717,8 @@ const goBack = async () => {
     font-size: 11px;
   }
 
-  .welcome-popup {
+  .welcome-popup,
+  .decrypt-popup {
     padding: 24px 20px;
     min-width: 240px;
   }

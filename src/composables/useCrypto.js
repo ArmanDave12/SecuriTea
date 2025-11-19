@@ -1,3 +1,4 @@
+// src/composables/useCrypto.js
 import CryptoJS from 'crypto-js'
 
 // 🔐 AES secret key (keep it safe)
