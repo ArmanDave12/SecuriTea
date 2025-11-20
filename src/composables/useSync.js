@@ -33,8 +33,9 @@ export function useSync() {
 
       for (const user of unsyncedUsers) {
         try {
-          const userRef = ref(realtimeDB, `users/${user.nickname}`)
+          const userRef = ref(realtimeDB, `users/${user.nickname}-${user.createdAt}`)
           await set(userRef, {
+            id: `${user.nickname}-${user.createdAt}`,
             nickname: user.nickname,
             pin: user.pin,
             createdAt: user.createdAt,
@@ -74,7 +75,6 @@ export function useSync() {
             })
             console.log(`[Sync] Updated Firebase record ${cred.firebaseKey}`)
           } else {
-            // Create new Firebase record (default behavior)
             const newCredRef = push(credRef)
             await set(newCredRef, {
               userId: cred.userId || 'unknown',

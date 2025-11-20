@@ -16,30 +16,27 @@ const useAuth = () => {
   const login = async (nickname, pin) => {
     error.value = ''
     loading.value = true
-    let foundUser = null
     try {
       const dbRef = dbRefFunc(db)
 
-      console.log('firebaseConnected', firebaseConnected.value)
-      if (firebaseConnected.value) {
-        const snapshot = await get(child(dbRef, 'users'))
-        if (snapshot.exists()) {
-          const users = snapshot.val()
-          foundUser = Object.values(users).find((u) => u.nickname === nickname)
+      const foundUser = await dexieDB.users.where('nickname').equals(nickname).first()
+
+      if (foundUser) {
+        if (decryptPin(foundUser.pin) === pin && foundUser.nickname === nickname) {
+          user.value = foundUser
+          localStorage.setItem('loggedInUser', JSON.stringify(foundUser))
+          success('Logged in successfully!')
+          return foundUser
+        } else if (decryptPin(foundUser.pin) !== pin) {
+          notifyError('PIN is incorrect')
+          return null
+        } else if (foundUser.nickname !== nickname) {
+          notifyError('Nickname is incorrect')
+          return null
         }
       }
-      if (foundUser === null) {
-        foundUser = await dexieDB.users.where('nickname').equals(nickname).first()
-      }
 
-      if (foundUser && decryptPin(foundUser.pin) === pin) {
-        user.value = foundUser
-        localStorage.setItem('loggedInUser', JSON.stringify(foundUser))
-        success('Logged in successfully!')
-        return foundUser
-      }
-
-      notifyError('Nickname or PIN is incorrect')
+      notifyError('User not found')
       return null
     } catch (err) {
       console.error('Login error:', err)
@@ -63,24 +60,13 @@ const useAuth = () => {
     const encryptedPin = encryptPin(pin)
     const timestamp = Date.now()
     try {
-      if (firebaseConnected.value) {
-        const usersRef = dbRefFunc(db, 'users')
-        const newUserRef = push(usersRef)
-        await set(newUserRef, { nickname, pin: encryptedPin, createdAt: timestamp })
-        await dexieDB.users.add({
-          nickname,
-          pin: encryptedPin,
-          createdAt: timestamp,
-          synced: true,
-        })
-      } else {
-        await dexieDB.users.add({
-          nickname,
-          pin: encryptedPin,
-          createdAt: timestamp,
-          synced: false,
-        })
-      }
+      await dexieDB.users.add({
+        id: `${nickname}-${timestamp}`,
+        nickname,
+        pin: encryptedPin,
+        createdAt: timestamp,
+        synced: false,
+      })
 
       success('Account created successfully!')
       return { nickname, pin: encryptedPin }
@@ -102,7 +88,9 @@ const useAuth = () => {
     return null
   }
 
-  return { user, login, logout, signup, getCurrentUser, error, loading }
+  const getAllUsers = () => dexieDB.users.toArray()
+
+  return { user, login, logout, signup, getCurrentUser, getAllUsers, error, loading }
 }
 
 export default useAuth

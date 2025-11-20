@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="custom-header">
+    <q-header elevated class="custom-header q-pt-lg">
       <div class="q-safe-top"></div>
       <q-toolbar class="custom-toolbar">
         <q-btn
@@ -216,7 +216,7 @@
       </q-scroll-area>
     </q-drawer>
 
-    <q-page-container>
+    <q-page-container class="q-mt-lg">
       <router-view />
     </q-page-container>
   </q-layout>

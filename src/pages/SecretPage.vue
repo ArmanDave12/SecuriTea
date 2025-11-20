@@ -3,7 +3,7 @@
     <!-- Fixed Height Layout - No Scrolling -->
     <div class="main-layout">
       <!-- Top Section with Back Button -->
-      <div class="top-section q-mt-md">
+      <div class="top-section q-mt-xl">
         <q-btn
           flat
           round
@@ -56,6 +56,93 @@
         </div>
       </div>
     </div>
+
+    <!-- PIN Entry Dialog - Must appear before welcome -->
+    <q-dialog v-model="pinDialog" persistent no-escape-dismiss>
+      <div class="pin-popup">
+        <div class="popup-icon">🔐</div>
+        <div class="popup-title">Enter PIN</div>
+        <div class="popup-text">Enter your 4-digit PIN to access the developer console</div>
+
+        <!-- PIN Input Display -->
+        <div class="pin-display q-mb-md">
+          <div
+            v-for="i in 4"
+            :key="i"
+            class="pin-dot"
+            :class="{ filled: pinInput.length >= i, shake: pinError }"
+          ></div>
+        </div>
+
+        <!-- Custom PIN Keypad -->
+        <div class="pin-keypad">
+          <div class="keypad-row">
+            <button
+              v-for="num in [1, 2, 3]"
+              :key="num"
+              class="keypad-btn"
+              @click="addPinDigit(num)"
+              :disabled="pinInput.length >= 4"
+            >
+              {{ num }}
+            </button>
+          </div>
+          <div class="keypad-row">
+            <button
+              v-for="num in [4, 5, 6]"
+              :key="num"
+              class="keypad-btn"
+              @click="addPinDigit(num)"
+              :disabled="pinInput.length >= 4"
+            >
+              {{ num }}
+            </button>
+          </div>
+          <div class="keypad-row">
+            <button
+              v-for="num in [7, 8, 9]"
+              :key="num"
+              class="keypad-btn"
+              @click="addPinDigit(num)"
+              :disabled="pinInput.length >= 4"
+            >
+              {{ num }}
+            </button>
+          </div>
+          <div class="keypad-row">
+            <button
+              class="keypad-btn secondary"
+              @click="clearPin"
+              :disabled="pinInput.length === 0"
+            >
+              ←
+            </button>
+            <button class="keypad-btn" @click="addPinDigit(0)" :disabled="pinInput.length >= 4">
+              0
+            </button>
+            <button class="keypad-btn primary" @click="verifyPin" :disabled="pinInput.length !== 4">
+              ✓
+            </button>
+          </div>
+        </div>
+
+        <div v-if="pinError" class="pin-error q-mt-md">
+          {{ pinErrorMessage }}
+        </div>
+
+        <!-- Back button to exit -->
+        <q-btn
+          flat
+          color="grey-5"
+          label="Back"
+          @click="goBack"
+          rounded
+          no-caps
+          class="back-btn-pin q-mt-md"
+          size="sm"
+        />
+      </div>
+    </q-dialog>
 
     <!-- Welcome Popup - Centered -->
     <q-dialog v-model="welcomeDialog" persistent>
@@ -169,6 +256,17 @@ import CryptoJS from 'crypto-js'
 
 const { syncFromFirebaseToDexie, removeCredentials } = usePasswords()
 const $q = useQuasar()
+
+// PIN Security
+const pinDialog = ref(true) // Show PIN dialog first
+const pinInput = ref('')
+const pinError = ref(false)
+const pinErrorMessage = ref('')
+const correctPin = ref('1234') // You can change this or make it configurable
+const maxPinAttempts = ref(3)
+const pinAttempts = ref(0)
+
+// Existing states
 const welcomeDialog = ref(false)
 const decryptDialog = ref(false)
 const isLoading = ref(true)
@@ -183,6 +281,70 @@ const secretKeyErrorMessage = ref('')
 const hasEncryptedKeyError = ref(false)
 const encryptedKeyErrorMessage = ref('')
 const router = useRouter()
+
+// PIN Functions
+const addPinDigit = (digit) => {
+  if (pinInput.value.length < 4) {
+    pinInput.value += digit.toString()
+
+    // Auto-verify when 4 digits entered
+    if (pinInput.value.length === 4) {
+      setTimeout(() => {
+        verifyPin()
+      }, 200)
+    }
+  }
+}
+
+const clearPin = () => {
+  pinInput.value = pinInput.value.slice(0, -1)
+  pinError.value = false
+  pinErrorMessage.value = ''
+}
+
+const verifyPin = () => {
+  if (pinInput.value === correctPin.value) {
+    // PIN is correct
+    pinDialog.value = false
+    pinError.value = false
+    pinErrorMessage.value = ''
+
+    // Start the normal loading sequence
+    setTimeout(() => {
+      isLoading.value = false
+      setTimeout(() => {
+        welcomeDialog.value = true
+      }, 100)
+    }, 300)
+  } else {
+    // PIN is incorrect
+    pinAttempts.value++
+    pinError.value = true
+
+    if (pinAttempts.value >= maxPinAttempts.value) {
+      pinErrorMessage.value = `Too many attempts. Access denied.`
+
+      // Auto-exit after too many attempts
+      setTimeout(() => {
+        goBack()
+      }, 2000)
+    } else {
+      const remaining = maxPinAttempts.value - pinAttempts.value
+      pinErrorMessage.value = `Incorrect PIN. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining.`
+    }
+
+    // Clear the input after error
+    setTimeout(() => {
+      pinInput.value = ''
+
+      // Remove shake animation after delay
+      setTimeout(() => {
+        pinError.value = false
+        pinErrorMessage.value = ''
+      }, 2000)
+    }, 500)
+  }
+}
 
 // Dynamic decrypt function using user-provided secret key
 const decryptWithCustomKey = (encryptedData, customSecretKey) => {
@@ -199,16 +361,10 @@ const decryptWithCustomKey = (encryptedData, customSecretKey) => {
 }
 
 onMounted(async () => {
-  console.log('Secret page mounted')
+  console.log('Secret page mounted - PIN required first')
 
-  setTimeout(async () => {
-    isLoading.value = false
-    await nextTick()
-
-    setTimeout(() => {
-      welcomeDialog.value = true
-    }, 100)
-  }, 600)
+  // Don't start loading sequence until PIN is verified
+  // The verifyPin function will handle the loading sequence
 })
 
 const closeWelcomeDialog = () => {
@@ -229,19 +385,22 @@ const onSecretButtonClick = async () => {
 
   try {
     $q.notify({
+      spinner: true,
       color: 'info',
-      position: 'top',
       message: 'Syncing with Firebase...',
       timeout: 1000,
+      position: 'top',
     })
 
     await syncFromFirebaseToDexie()
-    $q.notify({
-      color: 'positive',
-      position: 'top',
-      message: 'Data synced successfully! ✅',
-      timeout: 2500,
-    })
+    setTimeout(() => {
+      $q.notify({
+        color: 'positive',
+        position: 'top',
+        message: 'Data synced successfully! ✅',
+        timeout: 2500,
+      })
+    }, 2000)
   } catch (error) {
     $q.notify({
       color: 'negative',
@@ -377,13 +536,22 @@ const showClearData = () => {
     cancel: true,
     persistent: true,
   }).onOk(async () => {
-    await removeCredentials()
     $q.notify({
-      color: 'positive',
-      message: 'Successfully cleared data.',
+      spinner: true,
+      color: 'info',
+      message: 'Clearing data...',
       position: 'top',
-      timeout: 2000,
+      timeout: 1000,
     })
+    await removeCredentials()
+    setTimeout(() => {
+      $q.notify({
+        color: 'positive',
+        message: 'Successfully cleared data.',
+        position: 'top',
+        timeout: 2000,
+      })
+    }, 2000)
   })
 }
 
@@ -565,6 +733,130 @@ const goBack = async () => {
   }
 }
 
+/* PIN Entry Popup */
+.pin-popup {
+  background: #1f2937;
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  color: white;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.pin-display {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.pin-dot.filled {
+  background: #60a5fa;
+  border-color: #60a5fa;
+}
+
+.pin-dot.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+.pin-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.keypad-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.keypad-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keypad-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.keypad-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.keypad-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.keypad-btn.primary {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.keypad-btn.primary:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.keypad-btn.secondary {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.keypad-btn.secondary:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.pin-error {
+  color: #ef4444;
+  font-size: 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.back-btn-pin {
+  margin-top: 16px;
+  min-width: 80px;
+}
+
 /* Welcome Popup */
 .welcome-popup {
   background: #1f2937;
@@ -718,9 +1010,25 @@ const goBack = async () => {
   }
 
   .welcome-popup,
-  .decrypt-popup {
+  .decrypt-popup,
+  .pin-popup {
     padding: 24px 20px;
     min-width: 240px;
+  }
+
+  .pin-display {
+    gap: 8px;
+  }
+
+  .pin-dot {
+    width: 14px;
+    height: 14px;
+  }
+
+  .keypad-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
   }
 }
 
@@ -748,6 +1056,12 @@ const goBack = async () => {
   .action-btn {
     padding: 10px 6px;
     min-height: 60px;
+  }
+
+  .keypad-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
   }
 }
 

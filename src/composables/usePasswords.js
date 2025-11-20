@@ -16,7 +16,7 @@ export function usePasswords() {
 
   // Fix 1: Get the proper properties from the currentUser object
   const currentUser = getCurrentUser() || {}
-  const userId = currentUser.nickname || 'anonymous' // Use nickname as userId
+  const userId = `${currentUser.nickname}-${currentUser.createdAt}`
   const username = currentUser.nickname // Use nickname as username too
 
   /**
@@ -104,7 +104,7 @@ export function usePasswords() {
 
       if (!exists) {
         await dexieDB.credentials.add({
-          userId: cred.userId,
+          userId: `${cred.userId}-${cred.createdAt}`,
           email: cred.email,
           password: encryptPin(cred.password),
           username: cred.username,
