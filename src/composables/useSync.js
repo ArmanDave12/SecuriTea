@@ -1,6 +1,6 @@
 // src/composables/useSync.js
 import { watch } from 'vue'
-import { ref, set, push, update } from 'firebase/database'
+import { ref, set, push, update, remove } from 'firebase/database'
 import { db as dexieDB } from 'src/boot/dexie'
 import { firebaseConnected } from 'src/boot/firebaseConnection'
 import { db as realtimeDB } from 'src/boot/firebase'
@@ -33,15 +33,31 @@ export function useSync() {
 
       for (const user of unsyncedUsers) {
         try {
-          const userRef = ref(realtimeDB, `users/${user.nickname}-${user.createdAt}`)
-          await set(userRef, {
-            id: `${user.nickname}-${user.createdAt}`,
+          // Check if user has an original ID (meaning name was changed)
+          if (user.originalId && user.originalId !== user.id) {
+            // Delete the old Firebase entry
+            const oldUserRef = ref(realtimeDB, `users/${user.originalId}`)
+            await remove(oldUserRef)
+            console.log(`[Sync] Removed old user entry: ${user.originalId}`)
+          }
+
+          // Create/update the new Firebase entry
+          const newUserRef = ref(realtimeDB, `users/${user.id}`)
+          await set(newUserRef, {
+            id: user.id,
             nickname: user.nickname,
             pin: user.pin,
             createdAt: user.createdAt,
+            profileImage: user.profileImage,
           })
-          await dexieDB.users.where('nickname').equals(user.nickname).modify({ synced: true })
-          console.log(`[Sync] Synced user: ${user.nickname}`)
+
+          // Mark as synced and remove originalId
+          await dexieDB.users.where('id').equals(user.id).modify({
+            synced: true,
+            originalId: undefined, // Clean up the tracking field
+          })
+
+          console.log(`[Sync] Synced user: ${user.nickname} with ID: ${user.id}`)
         } catch (err) {
           console.error('[Sync] Failed to sync user:', user.nickname, err)
         }

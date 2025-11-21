@@ -33,6 +33,11 @@ const routes = [
         name: 'main', // Add name to the main route too
         component: () => import('pages/IndexPage.vue'),
       },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('pages/SettingsPage.vue'),
+      },
     ],
   },
 

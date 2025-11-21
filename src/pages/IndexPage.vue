@@ -147,7 +147,7 @@
         class="custom-fab"
         icon="add"
         direction="up"
-        :size="$q.screen.lt.sm ? 'sm' : 'md'"
+        size="xs"
         padding="xs"
         :persistent="$q.screen.lt.sm"
       >
@@ -1157,6 +1157,9 @@ onMounted(async () => {
 .custom-fab {
   background: linear-gradient(135deg, #008080 0%, #1e3a8a 100%) !important;
   box-shadow: 0 8px 24px rgba(0, 128, 128, 0.3) !important;
+  height: 55px;
+  width: 55px;
+  color: #e2e8f0 !important;
 }
 
 .fab-action-teal {

@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="custom-header q-pt-lg">
+    <q-header elevated class="custom-header">
       <div class="q-safe-top"></div>
       <q-toolbar class="custom-toolbar">
         <q-btn
@@ -67,7 +67,7 @@
                   </q-item>
 
                   <!-- Settings option -->
-                  <q-item clickable v-close-popup class="menu-item">
+                  <q-item clickable v-close-popup to="/settings" class="menu-item">
                     <q-item-section avatar>
                       <q-icon name="settings" class="menu-icon" />
                     </q-item-section>
@@ -133,22 +133,13 @@
               </q-item-section>
             </q-item>
 
-            <q-item clickable to="/profile" class="drawer-item clickable-item">
-              <q-item-section avatar>
-                <q-icon name="person" class="drawer-icon" />
-              </q-item-section>
-              <q-item-section>
-                <q-item-label>My Profile</q-item-label>
-              </q-item-section>
-            </q-item>
-
             <q-separator class="custom-separator" />
           </template>
 
           <q-item-label header class="section-header">Navigation</q-item-label>
 
           <!-- Dashboard link -->
-          <q-item clickable to="/" class="drawer-item clickable-item">
+          <q-item clickable to="/main" class="drawer-item clickable-item">
             <q-item-section avatar>
               <q-icon name="dashboard" class="drawer-icon" />
             </q-item-section>
@@ -158,7 +149,7 @@
           </q-item>
 
           <!-- Security Check link -->
-          <q-item clickable class="drawer-item clickable-item">
+          <q-item clickable to="/security-check" class="drawer-item clickable-item">
             <q-item-section avatar>
               <q-icon name="security" class="drawer-icon" />
             </q-item-section>
@@ -168,34 +159,12 @@
           </q-item>
 
           <!-- Settings link -->
-          <q-item clickable class="drawer-item clickable-item">
+          <q-item clickable to="/main/settings" class="drawer-item clickable-item">
             <q-item-section avatar>
               <q-icon name="settings" class="drawer-icon" />
             </q-item-section>
             <q-item-section>
               <q-item-label>Settings</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <!-- Resources section -->
-          <q-separator class="custom-separator" />
-          <q-item-label header class="section-header">Resources</q-item-label>
-
-          <q-item clickable class="drawer-item clickable-item">
-            <q-item-section avatar>
-              <q-icon name="help" class="drawer-icon" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Help & Support</q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <q-item clickable class="drawer-item clickable-item">
-            <q-item-section avatar>
-              <q-icon name="info" class="drawer-icon" />
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>About</q-item-label>
             </q-item-section>
           </q-item>
 
@@ -216,7 +185,7 @@
       </q-scroll-area>
     </q-drawer>
 
-    <q-page-container class="q-mt-lg">
+    <q-page-container>
       <router-view />
     </q-page-container>
   </q-layout>

@@ -3,7 +3,7 @@
     <!-- Fixed Height Layout - No Scrolling -->
     <div class="main-layout">
       <!-- Top Section with Back Button -->
-      <div class="top-section q-mt-xl">
+      <div class="top-section q-mt-sm">
         <q-btn
           flat
           round

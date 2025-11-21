@@ -1,8 +1,8 @@
 <template>
-  <div class="fullscreen bg-deep-blue text-white text-center q-pa-md flex flex-center">
+  <div class="fullscreen bg-deep-blue text-white text-center q-pa-sm flex flex-center">
     <div class="error-container">
       <!-- Tea cup with steam animation -->
-      <div class="tea-cup-container q-mb-lg">
+      <div class="tea-cup-container q-mb-md">
         <div class="tea-cup">
           <div class="cup-body"></div>
           <div class="cup-handle"></div>
@@ -15,23 +15,23 @@
       </div>
 
       <!-- 404 Text -->
-      <div class="error-number q-mb-md">4<span class="tea-accent">0</span>4</div>
+      <div class="error-number q-mb-sm">4<span class="tea-accent">0</span>4</div>
 
       <!-- Error message -->
-      <div class="text-h3 q-mb-sm" style="color: #90a4ae">Oops! This blend isn't brewing...</div>
+      <div class="error-title q-mb-xs">Oops! This blend isn't brewing...</div>
 
-      <div class="text-h6 q-mb-xl" style="color: #90a4ae; opacity: 0.7">
+      <div class="error-subtitle q-mb-lg">
         The page you're looking for seems to have steeped away.
       </div>
 
       <!-- Action buttons -->
-      <div class="q-gutter-md">
+      <div class="button-container q-mb-lg">
         <q-btn
-          class="home-btn"
+          class="home-btn q-mb-sm"
           color="teal"
           text-color="white"
           unelevated
-          size="lg"
+          size="md"
           to="/"
           label="Brew a Fresh Start"
           no-caps
@@ -43,7 +43,7 @@
           color="transparent"
           text-color="orange"
           outline
-          size="lg"
+          size="md"
           @click="$router.go(-1)"
           label="Go Back"
           no-caps
@@ -52,9 +52,9 @@
       </div>
 
       <!-- Security tea pun -->
-      <div class="tea-pun q-mt-xl">
-        <q-icon name="security" color="leaf-green" size="sm" class="q-mr-sm" />
-        <span style="color: #81c784">Your security is still brewing perfectly!</span>
+      <div class="tea-pun">
+        <q-icon name="security" color="leaf-green" size="sm" class="q-mr-xs" />
+        <span class="pun-text">Your security is still brewing perfectly!</span>
       </div>
     </div>
   </div>
@@ -71,13 +71,15 @@
 }
 
 .error-container {
-  max-width: 500px;
+  max-width: 280px;
+  width: 100%;
+  padding: 8px;
 }
 
-/* Tea Cup Styling */
+/* Tea Cup Styling - Mobile Optimized */
 .tea-cup-container {
   position: relative;
-  height: 120px;
+  height: 80px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -85,66 +87,66 @@
 
 .tea-cup {
   position: relative;
-  width: 80px;
-  height: 60px;
+  width: 60px;
+  height: 45px;
 }
 
 .cup-body {
-  width: 60px;
-  height: 50px;
+  width: 45px;
+  height: 38px;
   background: linear-gradient(to bottom, #26a69a 0%, #00695c 100%);
-  border-radius: 0 0 20px 20px;
-  border: 3px solid #004d40;
+  border-radius: 0 0 15px 15px;
+  border: 2px solid #004d40;
   position: relative;
 }
 
 .cup-handle {
   position: absolute;
-  right: -15px;
-  top: 10px;
-  width: 20px;
-  height: 25px;
-  border: 3px solid #ff8a65;
+  right: -12px;
+  top: 8px;
+  width: 16px;
+  height: 20px;
+  border: 2px solid #ff8a65;
   border-left: none;
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 8px 8px 0;
 }
 
 .tea-surface {
   position: absolute;
-  top: 5px;
-  left: 6px;
-  width: 48px;
-  height: 8px;
+  top: 4px;
+  left: 4px;
+  width: 37px;
+  height: 6px;
   background: linear-gradient(90deg, #81c784 0%, #4caf50 100%);
   border-radius: 50%;
   opacity: 0.8;
 }
 
-/* Steam Animation */
+/* Steam Animation - Smaller for Mobile */
 .steam {
   position: absolute;
-  width: 3px;
-  height: 20px;
+  width: 2px;
+  height: 15px;
   background: linear-gradient(to top, rgba(255, 255, 255, 0.8), transparent);
   border-radius: 50%;
   animation: steam-rise 2s ease-in-out infinite;
 }
 
 .steam-1 {
-  left: 20px;
-  top: -25px;
+  left: 15px;
+  top: -20px;
   animation-delay: 0s;
 }
 
 .steam-2 {
-  left: 30px;
-  top: -30px;
+  left: 22px;
+  top: -25px;
   animation-delay: 0.5s;
 }
 
 .steam-3 {
-  left: 40px;
-  top: -25px;
+  left: 29px;
+  top: -20px;
   animation-delay: 1s;
 }
 
@@ -155,21 +157,21 @@
   }
   50% {
     opacity: 0.8;
-    transform: translateY(-10px) rotate(2deg);
+    transform: translateY(-8px) rotate(2deg);
   }
   100% {
     opacity: 0;
-    transform: translateY(-20px) rotate(-2deg);
+    transform: translateY(-15px) rotate(-2deg);
   }
 }
 
-/* Error Number Styling */
+/* Error Number Styling - Mobile Responsive */
 .error-number {
-  font-size: 8rem;
+  font-size: 4.5rem;
   font-weight: 900;
   color: #26a69a;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  line-height: 1;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  line-height: 0.9;
 }
 
 .tea-accent {
@@ -180,29 +182,63 @@
 @keyframes pulse-orange {
   0% {
     color: #ff8a65;
-    text-shadow: 0 0 10px rgba(255, 138, 101, 0.5);
+    text-shadow: 0 0 8px rgba(255, 138, 101, 0.5);
   }
   100% {
     color: #ff6e40;
-    text-shadow: 0 0 20px rgba(255, 110, 64, 0.8);
+    text-shadow: 0 0 15px rgba(255, 110, 64, 0.8);
   }
 }
 
-/* Button Styling */
+/* Mobile-Optimized Text */
+.error-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #90a4ae;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.error-subtitle {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #90a4ae;
+  opacity: 0.8;
+  line-height: 1.4;
+  margin-bottom: 24px;
+}
+
+/* Button Container - Stacked for Mobile */
+.button-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Button Styling - Mobile Optimized */
 .home-btn {
   background: linear-gradient(45deg, #26a69a 0%, #00897b 100%);
-  box-shadow: 0 4px 12px rgba(38, 166, 154, 0.4);
+  box-shadow: 0 3px 8px rgba(38, 166, 154, 0.4);
   transition: all 0.3s ease;
+  width: 100%;
+  min-height: 44px;
+  font-size: 0.9rem;
+  padding: 8px 16px;
 }
 
 .home-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(38, 166, 154, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(38, 166, 154, 0.6);
 }
 
 .back-btn {
   border-color: #ff8a65;
   transition: all 0.3s ease;
+  width: 100%;
+  min-height: 44px;
+  font-size: 0.9rem;
+  padding: 8px 16px;
 }
 
 .back-btn:hover {
@@ -210,11 +246,22 @@
   transform: translateY(-1px);
 }
 
-/* Tea Pun Styling */
+/* Tea Pun Styling - Mobile Optimized */
 .tea-pun {
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 0.8rem;
   opacity: 0.9;
   animation: gentle-glow 3s ease-in-out infinite alternate;
+}
+
+.pun-text {
+  color: #81c784;
+  text-align: center;
+  line-height: 1.3;
 }
 
 @keyframes gentle-glow {
@@ -226,39 +273,159 @@
   }
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
+/* 320px Specific Optimizations */
+@media (max-width: 320px) {
+  .error-container {
+    max-width: 260px;
+    padding: 4px;
+  }
+
   .error-number {
-    font-size: 6rem;
+    font-size: 3.8rem;
   }
 
   .tea-cup {
-    transform: scale(0.8);
+    transform: scale(0.85);
   }
 
-  .text-h3 {
-    font-size: 1.5rem;
+  .error-title {
+    font-size: 1.1rem;
   }
 
-  .text-h6 {
+  .error-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+
+  .home-btn,
+  .back-btn {
+    font-size: 0.85rem;
+    min-height: 42px;
+    padding: 6px 12px;
+  }
+
+  .tea-pun {
+    font-size: 0.75rem;
+  }
+
+  .button-container {
+    gap: 10px;
+  }
+}
+
+/* Ultra-small screens (280px and below) */
+@media (max-width: 280px) {
+  .error-container {
+    max-width: 240px;
+  }
+
+  .error-number {
+    font-size: 3.2rem;
+  }
+
+  .tea-cup {
+    transform: scale(0.7);
+  }
+
+  .error-title {
     font-size: 1rem;
   }
+
+  .error-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .home-btn,
+  .back-btn {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+  }
 }
 
-/* Custom color classes for Quasar */
-.text-teal {
-  color: #26a69a !important;
+/* Landscape mode adjustments for small screens */
+@media (max-height: 500px) and (max-width: 800px) {
+  .tea-cup-container {
+    height: 60px;
+  }
+
+  .error-number {
+    font-size: 3.5rem;
+    margin-bottom: 8px;
+  }
+
+  .error-title {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+
+  .error-subtitle {
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+  }
+
+  .button-container {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .home-btn,
+  .back-btn {
+    flex: 1;
+    min-height: 40px;
+    font-size: 0.8rem;
+  }
+
+  .tea-pun {
+    font-size: 0.7rem;
+  }
 }
 
-.text-leaf-green {
-  color: #81c784 !important;
+/* Safe area for devices with notches/curved edges */
+@supports (padding: env(safe-area-inset-left)) {
+  .error-container {
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
 }
 
-.text-soft-orange {
-  color: #ff8a65 !important;
+/* Touch-friendly enhancements */
+.home-btn,
+.back-btn {
+  border-radius: 8px;
+  font-weight: 600;
 }
 
-.text-slate-gray {
-  color: #90a4ae !important;
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .steam {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .tea-accent {
+    animation: none;
+  }
+
+  .tea-pun {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .error-title,
+  .error-subtitle {
+    color: #ffffff;
+  }
+
+  .cup-body {
+    border-width: 3px;
+  }
+
+  .home-btn,
+  .back-btn {
+    border-width: 2px;
+  }
 }
 </style>

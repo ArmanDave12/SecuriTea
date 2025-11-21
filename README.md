@@ -1,40 +1,22 @@
-# SecuriTea (securitea)
+Use Teal or Deep Blue as the dominant color.
 
-SecuriTea
+Add Soft Orange or Leaf Green as small highlights (like steam, cup detail, or app icon accent).
 
-## Install the dependencies
-```bash
-yarn
-# or
-npm install
-```
+Slate Gray can be used for text or subtle outlines.
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
-```bash
-quasar dev
-```
+Meet SecuriTea, the security app brewed just for you!
+Whether you're guarding passwords, locking private notes, or securing your identity, SecuriTea gives you a smooth, encrypted experience with modern fingerprint and PIN protection. Simple. Fast. Secure.
 
+Why users love SecuriTea:
 
-### Lint the files
-```bash
-yarn lint
-# or
-npm run lint
-```
+Lightning-fast fingerprint unlock
 
+Encrypted PIN + password vault
 
-### Format the files
-```bash
-yarn format
-# or
-npm run format
-```
+Clean, minimalist UI
 
+Perfect for small phones
 
-### Build the app for production
-```bash
-quasar build
-```
+No clutter, no ads — pure security
 
-### Customize the configuration
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+Sip your tea with peace of mind — your security starts here. 🍵🔐
