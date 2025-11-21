@@ -367,7 +367,7 @@ const emit = defineEmits(['change-account', 'add-pin-digit', 'clear-pin', 'toggl
 
 .account-subtitle {
   color: #64748b;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;

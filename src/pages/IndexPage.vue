@@ -1,468 +1,516 @@
-<!-- src/pages/IndexPage.vue -->
 <template>
   <q-page class="password-manager-app">
-    <!-- Fixed search bar at top -->
-    <div class="search-container">
-      <q-input
-        v-model="search"
-        dense
-        placeholder="Search credentials..."
-        outlined
-        class="search-input"
-        bg-color="white"
-        clearable
-      >
-        <template v-slot:prepend>
-          <q-icon name="search" size="18px" class="search-icon" />
-        </template>
-      </q-input>
-    </div>
-
-    <!-- Main Content - optimized for small screens -->
-    <div class="content-container">
-      <div v-if="filteredCredentials.length === 0" class="empty-state">
-        <q-icon name="search_off" size="28px" class="empty-icon" />
-        <div class="text-subtitle2 q-mt-xs">No matching credentials</div>
-        <div class="text-caption q-mt-xs empty-text">Try adjusting your search</div>
+    <!-- Animated search bar at top -->
+    <transition name="search-slide" appear>
+      <div class="search-container">
+        <q-input
+          v-model="search"
+          dense
+          placeholder="Search credentials..."
+          outlined
+          class="search-input"
+          bg-color="white"
+          clearable
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" size="18px" class="search-icon" />
+          </template>
+        </q-input>
       </div>
+    </transition>
 
-      <!-- Mobile-optimized credential list -->
-      <div v-else class="credential-list">
+    <!-- Main Content with staggered animations -->
+    <div class="content-container">
+      <!-- Empty state with bounce animation -->
+      <transition name="empty-bounce" appear>
+        <div v-if="filteredCredentials.length === 0" class="empty-state">
+          <div class="empty-icon-wrapper">
+            <q-icon name="search_off" size="32px" class="empty-icon" />
+            <div class="icon-pulse-ring"></div>
+          </div>
+          <div class="text-subtitle2 empty-title">No matching credentials</div>
+          <div class="text-caption empty-description">Try adjusting your search</div>
+        </div>
+      </transition>
+
+      <!-- Enhanced credential list with staggered animations -->
+      <transition-group
+        name="credential-list"
+        tag="div"
+        v-if="filteredCredentials !== 0"
+        class="credential-list"
+        appear
+      >
         <q-card
           v-for="(credential, index) in filteredCredentials"
-          :key="index"
-          class="credential-card q-my-sm q-mx-md"
+          :key="`${credential.id || index}-${credential.email}-${credential.username}`"
+          class="credential-card"
+          :style="{ animationDelay: `${index * 0.05}s` }"
           @click="showPasswordDialog(index)"
           flat
           bordered
         >
-          <q-card-section class="q-pa-xs">
+          <q-card-section class="card-content">
             <div class="row items-center no-wrap justify-between">
-              <!-- Platform icon or letter - SIMPLIFIED -->
-              <div class="credential-icon" :style="getPlatformInfo(credential).style">
-                <q-icon
-                  v-if="getPlatformInfo(credential).isPlatform"
-                  :name="getPlatformInfo(credential).icon"
-                  size="16px"
-                  color="white"
-                />
-                <span v-else class="icon-letter">{{ getPlatformInfo(credential).letter }}</span>
+              <!-- Enhanced platform icon with animation -->
+              <div class="credential-icon-wrapper">
+                <div class="credential-icon" :style="getPlatformInfo(credential).style">
+                  <q-icon
+                    v-if="getPlatformInfo(credential).isPlatform"
+                    :name="getPlatformInfo(credential).icon"
+                    size="18px"
+                    color="white"
+                  />
+                  <span v-else class="icon-letter">{{ getPlatformInfo(credential).letter }}</span>
+                </div>
+                <div class="icon-glow"></div>
               </div>
 
-              <!-- Title and Username -->
+              <!-- Enhanced credential details -->
               <div class="credential-details">
-                <div class="text-subtitle2 credential-title">
+                <div class="credential-title">
                   {{ credential.username || 'No Username' }}
                   <span v-if="getPlatformInfo(credential).platformName" class="platform-badge">
                     {{ getPlatformInfo(credential).platformName }}
                   </span>
                 </div>
-                <div class="text-caption credential-username">
+                <div class="credential-username">
                   {{ credential.email || 'No Email' }}
                 </div>
               </div>
 
-              <!-- Visibility button -->
+              <!-- Enhanced visibility button -->
               <q-btn
                 flat
                 round
                 dense
                 class="visibility-btn"
                 icon="visibility"
-                size="xs"
+                size="sm"
                 @click.stop="showPasswordDialog(index)"
                 aria-label="View password"
-              />
+              >
+                <div class="btn-ripple"></div>
+              </q-btn>
             </div>
           </q-card-section>
         </q-card>
-      </div>
+      </transition-group>
     </div>
 
-    <!-- Password Dialog - Enhanced -->
-    <q-dialog v-model="passwordDialogOpen" position="bottom">
-      <q-card class="password-dialog-card">
-        <!-- Enhanced Header with Platform Info -->
-        <q-card-section
-          class="dialog-header"
-          :style="getPlatformInfo(activeCredential).headerStyle"
-        >
-          <div class="row items-center no-wrap">
-            <div class="dialog-platform-icon" :style="getPlatformInfo(activeCredential).style">
-              <q-icon
-                v-if="getPlatformInfo(activeCredential).isPlatform"
-                :name="getPlatformInfo(activeCredential).icon"
-                size="24px"
-                color="white"
-              />
-              <span v-else class="dialog-icon-letter">{{
-                getPlatformInfo(activeCredential).letter
-              }}</span>
-            </div>
-            <div class="q-ml-md">
-              <div class="dialog-title">
-                {{ activeCredential?.username || activeCredential?.email || 'Credential' }}
+    <!-- Enhanced Password Dialog with slide animation -->
+    <q-dialog
+      v-model="passwordDialogOpen"
+      position="bottom"
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
+      <transition name="dialog-content" appear>
+        <q-card class="password-dialog-card">
+          <!-- Enhanced Header with Platform Info -->
+          <q-card-section
+            class="dialog-header"
+            :style="getPlatformInfo(activeCredential).headerStyle"
+          >
+            <div class="header-content">
+              <div class="dialog-platform-icon" :style="getPlatformInfo(activeCredential).style">
+                <q-icon
+                  v-if="getPlatformInfo(activeCredential).isPlatform"
+                  :name="getPlatformInfo(activeCredential).icon"
+                  size="28px"
+                  color="white"
+                />
+                <span v-else class="dialog-icon-letter">{{
+                  getPlatformInfo(activeCredential).letter
+                }}</span>
+                <div class="platform-glow"></div>
               </div>
-              <div class="dialog-subtitle" v-if="getPlatformInfo(activeCredential).platformName">
-                {{ getPlatformInfo(activeCredential).platformName }}
+              <div class="dialog-info">
+                <div class="dialog-title">
+                  {{ activeCredential?.username || activeCredential?.email || 'Credential' }}
+                </div>
+                <div class="dialog-subtitle" v-if="getPlatformInfo(activeCredential).platformName">
+                  {{ getPlatformInfo(activeCredential).platformName }}
+                </div>
               </div>
             </div>
-          </div>
-        </q-card-section>
+          </q-card-section>
 
-        <!-- Password Display Section -->
-        <q-card-section class="q-py-sm">
-          <div class="password-section">
-            <div class="password-value text-monospace q-py-xs text-center">
-              {{ activeCredential?.password || 'No Password' }}
+          <!-- Enhanced Password Display Section -->
+          <q-card-section class="password-section-wrapper">
+            <div class="password-section">
+              <div class="password-label">Password</div>
+              <div class="password-value text-monospace">
+                {{ activeCredential?.password || 'No Password' }}
+              </div>
             </div>
-          </div>
-        </q-card-section>
+          </q-card-section>
 
-        <q-separator />
+          <q-separator />
 
-        <!-- Action Buttons -->
-        <q-card-section class="row justify-around q-py-sm">
-          <div class="action-button" @click="copyActivePassword">
-            <q-icon name="content_copy" class="action-icon-primary" size="24px" />
-            <div class="action-label">Copy password</div>
-          </div>
+          <!-- Enhanced Action Buttons -->
+          <q-card-section class="actions-section">
+            <div class="action-button" @click="copyActivePassword">
+              <div class="action-icon-wrapper">
+                <q-icon name="content_copy" class="action-icon" size="24px" />
+                <div class="action-ripple"></div>
+              </div>
+              <div class="action-label">Copy</div>
+            </div>
 
-          <div class="action-button" @click="editActiveCredential">
-            <q-icon name="edit" class="action-icon-primary" size="24px" />
-            <div class="action-label">Edit</div>
-          </div>
+            <div class="action-button" @click="editActiveCredential">
+              <div class="action-icon-wrapper">
+                <q-icon name="edit" class="action-icon" size="24px" />
+                <div class="action-ripple"></div>
+              </div>
+              <div class="action-label">Edit</div>
+            </div>
 
-          <div class="action-button" @click="confirmDeleteActive">
-            <q-icon name="delete" color="negative" size="24px" />
-            <div class="action-label">Delete</div>
-          </div>
-        </q-card-section>
-      </q-card>
+            <div class="action-button" @click="confirmDeleteActive">
+              <div class="action-icon-wrapper">
+                <q-icon name="delete" class="action-icon delete-icon" size="24px" />
+                <div class="action-ripple"></div>
+              </div>
+              <div class="action-label">Delete</div>
+            </div>
+          </q-card-section>
+        </q-card>
+      </transition>
     </q-dialog>
 
-    <!-- Mini Floating Action Button -->
+    <!-- Enhanced Floating Action Button -->
     <div class="fab-container">
-      <q-fab
-        class="custom-fab"
-        icon="add"
-        direction="up"
-        size="xs"
-        padding="xs"
-        :persistent="$q.screen.lt.sm"
-      >
-        <q-fab-action
-          class="fab-action-teal"
-          icon="password"
-          size="sm"
-          padding="xs"
-          label="Password Generator"
-          external-label
-          label-position="left"
-          @click="openPasswordGenerator"
-        />
-        <q-fab-action
-          class="fab-action-blue"
-          icon="cloud_download"
-          size="sm"
-          padding="xs"
-          label="Import Credentials"
-          external-label
-          label-position="left"
-          @click="openImportDialog"
-        />
-        <q-fab-action
-          class="fab-action-orange"
+      <transition name="fab-bounce" appear>
+        <q-fab
+          class="custom-fab"
           icon="add"
-          size="sm"
-          padding="xs"
-          label="New Credential"
-          external-label
-          label-position="left"
-          @click="openAddDialog"
-        />
-      </q-fab>
+          direction="up"
+          size="md"
+          padding="md"
+          :persistent="$q.screen.lt.sm"
+        >
+          <q-fab-action
+            class="fab-action fab-action-teal"
+            icon="password"
+            size="sm"
+            label="Password Generator"
+            external-label
+            label-position="left"
+            @click="openPasswordGenerator"
+          />
+          <q-fab-action
+            class="fab-action fab-action-blue"
+            icon="cloud_download"
+            size="sm"
+            label="Import Credentials"
+            external-label
+            label-position="left"
+            @click="openImportDialog"
+          />
+          <q-fab-action
+            class="fab-action fab-action-orange"
+            icon="add"
+            size="sm"
+            label="New Credential"
+            external-label
+            label-position="left"
+            @click="openAddDialog"
+          />
+        </q-fab>
+      </transition>
     </div>
 
-    <!-- Add Credential Dialog -->
-    <q-dialog v-model="addDialogOpen" position="bottom">
-      <q-card class="dialog-card">
-        <q-toolbar class="custom-toolbar text-white mobile-toolbar">
-          <q-btn flat round dense icon="arrow_back" v-close-popup @click="resetNewCredential" />
-          <q-toolbar-title class="text-body1">New Credential</q-toolbar-title>
-          <q-btn flat dense label="Save" :disable="!isFormValid()" @click="addCredsFunc" />
-        </q-toolbar>
+    <!-- Enhanced Add Credential Dialog -->
+    <q-dialog
+      v-model="addDialogOpen"
+      position="bottom"
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
+      <transition name="dialog-content" appear>
+        <q-card class="dialog-card">
+          <q-toolbar class="custom-toolbar text-white mobile-toolbar">
+            <q-btn flat round dense icon="arrow_back" v-close-popup @click="resetNewCredential" />
+            <q-toolbar-title class="text-body1">New Credential</q-toolbar-title>
+            <q-btn flat dense label="Save" :disable="!isFormValid()" @click="addCredsFunc" />
+          </q-toolbar>
 
-        <q-card-section class="q-pt-md q-px-sm">
-          <q-form @submit="addCredsFunc" class="form-container">
-            <!-- Platform Selection - Enhanced -->
-            <div class="form-field">
-              <q-select
-                dense
-                outlined
-                v-model="newCredential.platform"
-                :options="platformOptions"
-                label="Platform (Optional)"
-                class="platform-select"
-                clearable
-                option-label="title"
-                option-value="name"
-                emit-value
-                map-options
-              >
-                <template v-slot:prepend>
-                  <q-icon name="category" class="input-icon" size="xs" />
-                </template>
-                <template v-slot:option="scope">
-                  <q-item v-bind="scope.itemProps" class="platform-option">
-                    <q-item-section avatar>
+          <q-card-section class="form-section">
+            <q-form @submit="addCredsFunc" class="form-container">
+              <!-- Enhanced form fields with staggered animations -->
+              <div class="form-field" :style="{ animationDelay: '0.1s' }">
+                <q-select
+                  dense
+                  outlined
+                  v-model="newCredential.platform"
+                  :options="platformOptions"
+                  label="Platform (Optional)"
+                  class="platform-select custom-input"
+                  clearable
+                  option-label="title"
+                  option-value="name"
+                  emit-value
+                  map-options
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="category" class="input-icon" size="sm" />
+                  </template>
+                  <template v-slot:option="scope">
+                    <q-item v-bind="scope.itemProps" class="platform-option">
+                      <q-item-section avatar>
+                        <div
+                          class="platform-option-icon"
+                          :style="{ backgroundColor: scope.opt.color }"
+                        >
+                          <q-icon :name="scope.opt.icon" color="white" size="18px" />
+                        </div>
+                      </q-item-section>
+                      <q-item-section>
+                        <q-item-label class="text-weight-medium">{{
+                          scope.opt.title
+                        }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                  <template v-slot:selected-item="scope">
+                    <div class="row items-center no-wrap" v-if="scope.opt">
                       <div
-                        class="platform-option-icon"
+                        class="selected-platform-icon"
                         :style="{ backgroundColor: scope.opt.color }"
                       >
-                        <q-icon :name="scope.opt.icon" color="white" size="18px" />
+                        <q-icon :name="scope.opt.icon" color="white" size="14px" />
                       </div>
-                    </q-item-section>
-                    <q-item-section>
-                      <q-item-label class="text-weight-medium">{{ scope.opt.title }}</q-item-label>
-                    </q-item-section>
-                  </q-item>
-                </template>
-                <template v-slot:selected-item="scope">
-                  <div class="row items-center no-wrap" v-if="scope.opt">
-                    <div
-                      class="selected-platform-icon"
-                      :style="{ backgroundColor: scope.opt.color }"
-                    >
-                      <q-icon :name="scope.opt.icon" color="white" size="14px" />
+                      <span class="q-ml-sm">{{ scope.opt.title }}</span>
                     </div>
-                    <span class="q-ml-sm">{{ scope.opt.title }}</span>
-                  </div>
-                </template>
-              </q-select>
-            </div>
-
-            <!-- Email -->
-            <div class="form-field">
-              <q-input
-                dense
-                outlined
-                v-model="newCredential.email"
-                :label="requireEmail ? 'Email *' : 'Email'"
-                class="custom-input"
-                :rules="requireEmail ? [(val) => !!val || 'Email is required'] : []"
-                type="email"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="mail" class="input-icon" size="xs" />
-                </template>
-              </q-input>
-            </div>
-
-            <!-- Username -->
-            <div class="form-field">
-              <q-input
-                dense
-                outlined
-                v-model="newCredential.username"
-                :label="requireUsername ? 'Username *' : 'Username'"
-                class="custom-input"
-                :rules="requireUsername ? [(val) => !!val || 'Username is required'] : []"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="person" class="input-icon" size="xs" />
-                </template>
-              </q-input>
-            </div>
-
-            <!-- Password -->
-            <div class="form-field">
-              <q-input
-                dense
-                outlined
-                v-model="newCredential.password"
-                label="Password *"
-                class="custom-input"
-                :type="showNewPassword ? 'text' : 'password'"
-                :rules="[(val) => !!val || 'Password is required']"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="vpn_key" class="input-icon" size="xs" />
-                </template>
-                <template v-slot:append>
-                  <q-icon
-                    :name="showNewPassword ? 'visibility_off' : 'visibility'"
-                    class="cursor-pointer input-icon"
-                    size="xs"
-                    @click="showNewPassword = !showNewPassword"
-                  />
-                </template>
-              </q-input>
-            </div>
-
-            <!-- Field requirement toggles (for admin/debugging) -->
-            <div v-if="showFieldOptions" class="field-options q-mt-md q-pt-md">
-              <q-separator />
-              <div class="text-caption q-mt-sm q-mb-xs text-grey-6">Field Requirements:</div>
-              <div class="row q-gutter-sm">
-                <q-toggle
-                  v-model="requireEmail"
-                  label="Email required"
-                  size="xs"
-                  dense
-                  class="custom-toggle"
-                />
-                <q-toggle
-                  v-model="requireUsername"
-                  label="Username required"
-                  size="xs"
-                  dense
-                  class="custom-toggle"
-                />
+                  </template>
+                </q-select>
               </div>
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
+
+              <div class="form-field" :style="{ animationDelay: '0.2s' }">
+                <q-input
+                  dense
+                  outlined
+                  v-model="newCredential.email"
+                  :label="requireEmail ? 'Email *' : 'Email'"
+                  class="custom-input"
+                  :rules="requireEmail ? [(val) => !!val || 'Email is required'] : []"
+                  type="email"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="mail" class="input-icon" size="sm" />
+                  </template>
+                </q-input>
+              </div>
+
+              <div class="form-field" :style="{ animationDelay: '0.3s' }">
+                <q-input
+                  dense
+                  outlined
+                  v-model="newCredential.username"
+                  :label="requireUsername ? 'Username *' : 'Username'"
+                  class="custom-input"
+                  :rules="requireUsername ? [(val) => !!val || 'Username is required'] : []"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="person" class="input-icon" size="sm" />
+                  </template>
+                </q-input>
+              </div>
+
+              <div class="form-field" :style="{ animationDelay: '0.4s' }">
+                <q-input
+                  dense
+                  outlined
+                  v-model="newCredential.password"
+                  label="Password *"
+                  class="custom-input"
+                  :type="showNewPassword ? 'text' : 'password'"
+                  :rules="[(val) => !!val || 'Password is required']"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="vpn_key" class="input-icon" size="sm" />
+                  </template>
+                  <template v-slot:append>
+                    <q-icon
+                      :name="showNewPassword ? 'visibility_off' : 'visibility'"
+                      class="cursor-pointer input-icon toggle-icon"
+                      size="sm"
+                      @click="toggleNewPassword"
+                    />
+                  </template>
+                </q-input>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </transition>
     </q-dialog>
 
-    <!-- Edit Credential Dialog -->
-    <q-dialog v-model="editDialogOpen" position="bottom">
-      <q-card class="dialog-card">
-        <q-toolbar class="custom-toolbar text-white mobile-toolbar">
-          <q-btn flat round dense icon="arrow_back" v-close-popup />
-          <q-toolbar-title class="text-body1">Edit Credential</q-toolbar-title>
-          <q-btn flat dense label="Update" @click="updateCredential" />
-        </q-toolbar>
+    <!-- Keep other dialogs with similar enhancements but condensed for space -->
 
-        <q-card-section class="q-pt-md q-px-sm">
-          <q-form @submit="updateCredential" class="form-container">
-            <!-- Platform Selection -->
-            <div class="form-field">
-              <q-select
-                dense
-                outlined
-                v-model="editingCredential.platform"
-                :options="platformOptions"
-                label="Platform (Optional)"
-                class="custom-input"
-                clearable
-                option-label="title"
-                option-value="name"
-                emit-value
-                map-options
-              >
-                <template v-slot:prepend>
-                  <q-icon name="category" class="input-icon" size="xs" />
-                </template>
-                <template v-slot:option="scope">
-                  <q-item v-bind="scope.itemProps">
-                    <q-item-section avatar>
-                      <q-icon
-                        :name="scope.opt.icon"
-                        :style="{ color: scope.opt.color }"
-                        size="20px"
-                      />
-                    </q-item-section>
-                    <q-item-section>
-                      <q-item-label>{{ scope.opt.title }}</q-item-label>
-                    </q-item-section>
-                  </q-item>
-                </template>
-              </q-select>
-            </div>
+    <!-- Enhanced Edit Credential Dialog -->
+    <q-dialog
+      v-model="editDialogOpen"
+      position="bottom"
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
+      <transition name="dialog-content" appear>
+        <q-card class="dialog-card">
+          <q-toolbar class="custom-toolbar text-white mobile-toolbar">
+            <q-btn flat round dense icon="arrow_back" v-close-popup />
+            <q-toolbar-title class="text-body1">Edit Credential</q-toolbar-title>
+            <q-btn flat dense label="Update" @click="updateCredential" />
+          </q-toolbar>
 
-            <!-- Email -->
-            <div class="form-field">
-              <q-input
-                dense
-                outlined
-                v-model="editingCredential.email"
-                :label="requireEmail ? 'Email *' : 'Email'"
-                class="custom-input"
-                :rules="requireEmail ? [(val) => !!val || 'Email is required'] : []"
-                type="email"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="mail" class="input-icon" size="xs" />
-                </template>
-              </q-input>
-            </div>
+          <q-card-section class="form-section">
+            <q-form @submit="updateCredential" class="form-container">
+              <!-- Similar enhanced form fields as add dialog -->
+              <div class="form-field" :style="{ animationDelay: '0.1s' }">
+                <q-select
+                  dense
+                  outlined
+                  v-model="editingCredential.platform"
+                  :options="platformOptions"
+                  label="Platform (Optional)"
+                  class="custom-input"
+                  clearable
+                  option-label="title"
+                  option-value="name"
+                  emit-value
+                  map-options
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="category" class="input-icon" size="sm" />
+                  </template>
+                </q-select>
+              </div>
 
-            <!-- Username -->
-            <div class="form-field">
-              <q-input
-                dense
-                outlined
-                v-model="editingCredential.username"
-                :label="requireUsername ? 'Username *' : 'Username'"
-                class="custom-input"
-                :rules="requireUsername ? [(val) => !!val || 'Username is required'] : []"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="person" class="input-icon" size="xs" />
-                </template>
-              </q-input>
-            </div>
+              <div class="form-field" :style="{ animationDelay: '0.2s' }">
+                <q-input
+                  dense
+                  outlined
+                  v-model="editingCredential.email"
+                  :label="requireEmail ? 'Email *' : 'Email'"
+                  class="custom-input"
+                  :rules="requireEmail ? [(val) => !!val || 'Email is required'] : []"
+                  type="email"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="mail" class="input-icon" size="sm" />
+                  </template>
+                </q-input>
+              </div>
 
-            <!-- Password -->
-            <div class="form-field">
-              <q-input
-                dense
-                outlined
-                v-model="editingCredential.password"
-                label="Password *"
-                class="custom-input"
-                :type="showEditPassword ? 'text' : 'password'"
-                :rules="[(val) => !!val || 'Password is required']"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="vpn_key" class="input-icon" size="xs" />
-                </template>
-                <template v-slot:append>
-                  <q-icon
-                    :name="showEditPassword ? 'visibility_off' : 'visibility'"
-                    class="cursor-pointer input-icon"
-                    size="xs"
-                    @click="showEditPassword = !showEditPassword"
-                  />
-                </template>
-              </q-input>
-            </div>
-          </q-form>
-        </q-card-section>
-      </q-card>
+              <div class="form-field" :style="{ animationDelay: '0.3s' }">
+                <q-input
+                  dense
+                  outlined
+                  v-model="editingCredential.username"
+                  :label="requireUsername ? 'Username *' : 'Username'"
+                  class="custom-input"
+                  :rules="requireUsername ? [(val) => !!val || 'Username is required'] : []"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="person" class="input-icon" size="sm" />
+                  </template>
+                </q-input>
+              </div>
+
+              <div class="form-field" :style="{ animationDelay: '0.4s' }">
+                <q-input
+                  dense
+                  outlined
+                  v-model="editingCredential.password"
+                  label="Password *"
+                  class="custom-input"
+                  :type="showEditPassword ? 'text' : 'password'"
+                  :rules="[(val) => !!val || 'Password is required']"
+                >
+                  <template v-slot:prepend>
+                    <q-icon name="vpn_key" class="input-icon" size="sm" />
+                  </template>
+                  <template v-slot:append>
+                    <q-icon
+                      :name="showEditPassword ? 'visibility_off' : 'visibility'"
+                      class="cursor-pointer input-icon toggle-icon"
+                      size="sm"
+                      @click="toggleEditPassword"
+                    />
+                  </template>
+                </q-input>
+              </div>
+            </q-form>
+          </q-card-section>
+        </q-card>
+      </transition>
     </q-dialog>
 
-    <!-- Keep all other dialogs as they were -->
-    <!-- Delete Confirmation Dialog -->
-    <q-dialog v-model="deleteDialogOpen">
-      <q-card class="dialog-card">
-        <q-card-section class="row items-center q-pb-xs">
-          <q-avatar icon="warning" color="negative" text-color="white" size="sm" />
-          <span class="q-ml-sm text-body2">Delete Credential</span>
-        </q-card-section>
+    <!-- Enhanced Delete Confirmation Dialog -->
+    <q-dialog v-model="deleteDialogOpen" transition-show="scale" transition-hide="scale">
+      <transition name="delete-bounce" appear>
+        <q-card class="delete-dialog-card">
+          <q-card-section class="delete-header">
+            <div class="delete-icon-wrapper">
+              <q-icon name="warning" class="delete-warning-icon" size="32px" />
+              <div class="warning-pulse"></div>
+            </div>
+            <div class="delete-title">Delete Credential</div>
+          </q-card-section>
 
-        <q-card-section class="q-pt-none text-body2">
-          Are you sure you want to delete "{{
-            deleteCredential?.username || deleteCredential?.email || 'this credential'
-          }}"?
-        </q-card-section>
+          <q-card-section class="delete-content">
+            Are you sure you want to delete "{{
+              deleteCredential?.username || deleteCredential?.email || 'this credential'
+            }}"?
+          </q-card-section>
 
-        <q-separator />
+          <q-card-actions class="delete-actions">
+            <q-btn flat class="cancel-btn" label="Cancel" v-close-popup />
+            <q-btn
+              flat
+              class="delete-confirm-btn"
+              label="Delete"
+              @click="deleteSelectedCredential"
+              v-close-popup
+            />
+          </q-card-actions>
+        </q-card>
+      </transition>
+    </q-dialog>
 
-        <q-card-actions align="right" class="q-py-xs">
-          <q-btn flat dense label="Cancel" class="cancel-btn" v-close-popup />
-          <q-btn
-            flat
-            dense
-            label="Delete"
-            color="negative"
-            @click="deleteSelectedCredential"
-            v-close-popup
-          />
-        </q-card-actions>
-      </q-card>
+    <!-- Enhanced Import Dialog -->
+    <q-dialog
+      v-model="importDialogOpen"
+      position="bottom"
+      transition-show="slide-up"
+      transition-hide="slide-down"
+    >
+      <transition name="dialog-content" appear>
+        <q-card class="dialog-card">
+          <q-card-section class="import-header">
+            <div class="import-title">Import Credentials</div>
+            <q-btn icon="close" flat round dense v-close-popup />
+          </q-card-section>
+
+          <q-card-section class="import-options">
+            <q-option-group
+              v-model="importOption"
+              :options="[
+                { label: 'Import from CSV', value: 'csv' },
+                { label: 'Import from Google', value: 'google' },
+                { label: 'Import from LastPass', value: 'lastpass' },
+                { label: 'Import from 1Password', value: '1password' },
+              ]"
+              class="custom-option-group"
+              dense
+            />
+          </q-card-section>
+
+          <q-card-actions class="import-actions">
+            <q-btn flat class="continue-btn" label="Continue" @click="continueImport" />
+          </q-card-actions>
+        </q-card>
+      </transition>
     </q-dialog>
 
     <!-- Password Generator Component -->
@@ -475,35 +523,6 @@
       @password-generated="onPasswordGenerated"
       @password-copied="onPasswordCopied"
     />
-
-    <!-- Import Dialog -->
-    <q-dialog v-model="importDialogOpen" position="bottom">
-      <q-card class="dialog-card">
-        <q-card-section class="row items-center q-pb-sm">
-          <div class="text-subtitle1">Import Credentials</div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup />
-        </q-card-section>
-
-        <q-card-section class="q-py-sm">
-          <q-option-group
-            v-model="importOption"
-            :options="[
-              { label: 'Import from CSV', value: 'csv' },
-              { label: 'Import from Google', value: 'google' },
-              { label: 'Import from LastPass', value: 'lastpass' },
-              { label: 'Import from 1Password', value: '1password' },
-            ]"
-            class="custom-option-group"
-            dense
-          />
-        </q-card-section>
-
-        <q-card-actions align="right" class="q-px-sm q-py-xs">
-          <q-btn flat class="continue-btn" label="Continue" size="sm" @click="continueImport" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </q-page>
 </template>
 
@@ -572,6 +591,15 @@ const newCredential = ref({
   password: '',
   isVisible: false,
 })
+
+// Enhanced password visibility toggles with animation feedback
+const toggleNewPassword = () => {
+  showNewPassword.value = !showNewPassword.value
+}
+
+const toggleEditPassword = () => {
+  showEditPassword.value = !showEditPassword.value
+}
 
 // Helper function to adjust color brightness
 const adjustBrightness = (color, percent) => {
@@ -747,6 +775,7 @@ const copyPassword = (password) => {
         position: 'top',
         message: 'Password copied to clipboard',
         icon: 'check',
+        timeout: 2000,
       })
     })
     .catch((err) => {
@@ -855,7 +884,6 @@ const deleteSelectedCredential = async () => {
 
 // Password generator event handlers
 const onPasswordGenerated = (password) => {
-  // Optional: You can add any additional logic when password is generated
   console.log('Password generated:', password)
 }
 
@@ -882,8 +910,6 @@ const continueImport = () => {
     message: `Import from ${importOption.value.toUpperCase()} started`,
     icon: 'cloud_download',
     timeout: 1500,
-    textColor: 'white',
-    classes: 'mobile-notification',
   })
 }
 
@@ -893,9 +919,132 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Enhanced page transitions */
+.search-slide-enter-active {
+  animation: searchSlideIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.empty-bounce-enter-active {
+  animation: emptyBounceIn 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
+}
+
+.credential-list-enter-active {
+  animation: credentialSlideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.credential-list-move {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.credential-list-leave-active {
+  position: absolute;
+  right: 0;
+  left: 0;
+  transition: all 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53);
+}
+
+.credential-list-leave-to {
+  opacity: 0;
+  transform: translateX(30px) scale(0.9);
+}
+
+.dialog-content-enter-active {
+  animation: dialogSlideUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.fab-bounce-enter-active {
+  animation: fabBounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.8s both;
+}
+
+.delete-bounce-enter-active {
+  animation: deleteBounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Keyframes for main transitions */
+@keyframes searchSlideIn {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes emptyBounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes credentialSlideIn {
+  0% {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dialogSlideUp {
+  0% {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fabBounceIn {
+  0% {
+    transform: translateY(50px) scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.1);
+  }
+  70% {
+    transform: translateY(5px) scale(0.9);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes deleteBounceIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* Enhanced styling with platform-aware colors */
 .password-manager-app {
-  background-color: #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
   min-height: 100vh;
   position: relative;
   display: flex;
@@ -905,15 +1054,18 @@ onMounted(async () => {
   overflow-x: hidden;
 }
 
-/* Search Container Styling */
+/* Enhanced Search Container */
 .search-container {
-  background-color: #ffffff;
-  padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   position: sticky;
   top: 0;
   z-index: 10;
+  backdrop-filter: blur(10px);
 }
 
 .search-input {
@@ -922,20 +1074,24 @@ onMounted(async () => {
 }
 
 .search-input :deep(.q-field__control) {
-  border-radius: 12px !important;
-  border: 2px solid #e2e8f0 !important;
-  background-color: #f8fafc !important;
-  transition: all 0.2s ease;
+  border-radius: 16px !important;
+  border: 2px solid rgba(226, 232, 240, 0.6) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .search-input :deep(.q-field--focused .q-field__control) {
-  border-color: #008080 !important;
-  box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1) !important;
-  background-color: #ffffff !important;
+  border-color: rgba(0, 128, 128, 0.6) !important;
+  box-shadow:
+    0 0 0 3px rgba(0, 128, 128, 0.1),
+    0 4px 12px rgba(0, 128, 128, 0.15) !important;
+  background: #ffffff !important;
+  transform: translateY(-1px);
 }
 
 .search-input :deep(.q-field__native) {
-  padding: 12px 16px !important;
+  padding: 14px 16px !important;
   font-size: 16px !important;
   color: #334155 !important;
 }
@@ -943,48 +1099,139 @@ onMounted(async () => {
 .search-input :deep(.q-field__label) {
   color: #64748b !important;
   font-size: 16px !important;
+  font-weight: 500;
 }
 
 .search-icon {
   color: #64748b !important;
   margin-left: 4px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus-within .search-icon {
+  color: #008080 !important;
+  transform: scale(1.1);
 }
 
 .content-container {
   flex: 1;
-  padding: 8px 6px;
+  padding: 12px 8px;
   width: 100%;
   margin: 0 auto;
+}
+
+/* Enhanced empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  padding: 40px 24px;
+  margin: 20px 0;
+  position: relative;
+}
+
+.empty-icon-wrapper {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.empty-icon {
+  color: #64748b !important;
+  position: relative;
+  z-index: 2;
+}
+
+.icon-pulse-ring {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 2px solid rgba(100, 116, 139, 0.2);
+  border-radius: 50%;
+  animation: emptyPulse 2s infinite ease-in-out;
+}
+
+@keyframes emptyPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.empty-title {
+  color: #475569 !important;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.empty-description {
+  color: #64748b !important;
 }
 
 /* Enhanced credential cards */
 .credential-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: 70px;
+  gap: 12px;
+  padding-bottom: 80px;
 }
 
 .credential-card {
-  transition: all 0.2s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   cursor: pointer;
-  border-radius: 12px;
-  margin-bottom: 6px;
-  border: 1px solid #e2e8f0 !important;
-  background: white;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.6) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.credential-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 128, 128, 0.05) 50%, transparent 100%);
+  transition: left 0.6s ease;
 }
 
 .credential-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: #008080 !important;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 128, 128, 0.15);
+  border-color: rgba(0, 128, 128, 0.4) !important;
+  background: #ffffff;
+}
+
+.credential-card:hover::before {
+  left: 100%;
+}
+
+.card-content {
+  padding: 16px !important;
 }
 
 /* Enhanced credential icon */
+.credential-icon-wrapper {
+  position: relative;
+}
+
 .credential-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
   color: white;
   display: flex;
   align-items: center;
@@ -992,16 +1239,39 @@ onMounted(async () => {
   font-weight: bold;
   font-size: 16px;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.credential-card:hover .credential-icon {
+  transform: scale(1.1);
+}
+
+.icon-glow {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 16px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.credential-card:hover .icon-glow {
+  opacity: 1;
 }
 
 .icon-letter {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .credential-details {
-  margin: 0 12px;
+  margin: 0 16px;
   flex: 1;
   min-width: 0;
 }
@@ -1010,21 +1280,28 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 15px;
   color: #475569 !important;
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.credential-card:hover .credential-title {
+  color: #008080 !important;
 }
 
 .platform-badge {
-  background: rgba(0, 128, 128, 0.1);
+  background: linear-gradient(135deg, rgba(0, 128, 128, 0.1) 0%, rgba(0, 128, 128, 0.15) 100%);
   color: #008080 !important;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600;
+  border: 1px solid rgba(0, 128, 128, 0.2);
 }
 
 .credential-username {
@@ -1032,207 +1309,561 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   color: #64748b !important;
-  font-size: 12px;
+  font-size: 13px;
+  transition: color 0.3s ease;
 }
 
+.credential-card:hover .credential-username {
+  color: #475569 !important;
+}
+
+/* Enhanced visibility button */
 .visibility-btn {
   color: #64748b !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .visibility-btn:hover {
   color: #008080 !important;
+  background: rgba(0, 128, 128, 0.1) !important;
+  transform: scale(1.1);
+}
+
+.btn-ripple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle, rgba(0, 128, 128, 0.3) 0%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.visibility-btn:active .btn-ripple {
+  transform: scale(1);
+  opacity: 1;
+  transition: all 0.1s ease;
 }
 
 /* Enhanced Password Dialog */
 .password-dialog-card {
   width: 100%;
   max-width: 100%;
-  border-radius: 16px 16px 0 0;
+  border-radius: 20px 20px 0 0;
   overflow: hidden;
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.15);
 }
 
 .dialog-header {
   color: white;
-  padding: 20px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dialog-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: headerShimmer 3s linear infinite;
+}
+
+@keyframes headerShimmer {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
 .dialog-platform-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  margin-right: 16px;
+}
+
+.platform-glow {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 24px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  animation: platformGlow 2s ease-in-out infinite;
+}
+
+@keyframes platformGlow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
 }
 
 .dialog-icon-letter {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: white;
 }
 
+.dialog-info {
+  flex: 1;
+}
+
 .dialog-title {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .dialog-subtitle {
   font-size: 14px;
   opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Enhanced password section */
+.password-section-wrapper {
+  padding: 20px !important;
 }
 
 .password-section {
-  background: linear-gradient(135deg, rgba(0, 128, 128, 0.1) 0%, rgba(30, 58, 138, 0.1) 100%);
-  border-left: 3px solid #008080;
-  padding: 12px;
-  border-radius: 8px;
-  margin: 0 16px;
-  word-break: break-all;
+  background: linear-gradient(135deg, rgba(0, 128, 128, 0.08) 0%, rgba(30, 58, 138, 0.08) 100%);
+  border: 2px solid rgba(0, 128, 128, 0.15);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.password-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 128, 128, 0.5) 50%, transparent 100%);
+}
+
+.password-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
 }
 
 .password-value {
-  font-size: 16px;
+  font-size: 18px;
   color: #008080 !important;
-  line-height: 1.3;
+  line-height: 1.4;
   word-break: break-all;
+  font-weight: 600;
+  text-align: center;
 }
 
-/* Action buttons in dialog */
+/* Enhanced action buttons */
+.actions-section {
+  display: flex;
+  justify-content: space-around;
+  padding: 16px 20px !important;
+  gap: 8px;
+}
+
 .action-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px 12px;
   cursor: pointer;
-  border-radius: 8px;
-  transition: background-color 0.2s;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   flex: 1;
+  position: relative;
+  overflow: hidden;
 }
 
 .action-button:hover {
-  background-color: rgba(0, 128, 128, 0.1);
+  background: linear-gradient(135deg, rgba(0, 128, 128, 0.08) 0%, rgba(0, 128, 128, 0.12) 100%);
+  transform: translateY(-2px);
 }
 
-.action-icon-primary {
+.action-icon-wrapper {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.action-icon {
   color: #008080 !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.delete-icon {
+  color: #ef4444 !important;
+}
+
+.action-button:hover .action-icon {
+  transform: scale(1.15);
+}
+
+.action-ripple {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: radial-gradient(circle, rgba(0, 128, 128, 0.3) 0%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+}
+
+.action-button:active .action-ripple {
+  transform: scale(1);
+  opacity: 1;
+  transition: all 0.1s ease;
 }
 
 .action-label {
-  margin-top: 6px;
   font-size: 12px;
   color: #64748b !important;
+  font-weight: 600;
+  transition: color 0.3s ease;
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
-  padding: 32px 24px;
-  margin: 16px 0;
+.action-button:hover .action-label {
+  color: #008080 !important;
 }
 
-.empty-icon {
-  color: #64748b !important;
-}
-
-.empty-text {
-  color: #64748b !important;
-}
-
+/* Enhanced FAB */
 .fab-container {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 9;
+  right: 20px;
+  bottom: 20px;
+  z-index: 15;
 }
 
 .custom-fab {
   background: linear-gradient(135deg, #008080 0%, #1e3a8a 100%) !important;
-  box-shadow: 0 8px 24px rgba(0, 128, 128, 0.3) !important;
-  height: 55px;
-  width: 55px;
-  color: #e2e8f0 !important;
+  box-shadow:
+    0 8px 32px rgba(0, 128, 128, 0.4),
+    0 4px 16px rgba(30, 58, 138, 0.3) !important;
+  color: white !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.custom-fab:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow:
+    0 12px 40px rgba(0, 128, 128, 0.5),
+    0 6px 20px rgba(30, 58, 138, 0.4) !important;
+}
+
+.fab-action {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.fab-action:hover {
+  transform: scale(1.1);
 }
 
 .fab-action-teal {
-  background: #008080 !important;
-  box-shadow: 0 4px 12px rgba(0, 128, 128, 0.3) !important;
+  background: linear-gradient(135deg, #008080 0%, #006666 100%) !important;
 }
 
 .fab-action-blue {
-  background: #1e3a8a !important;
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3) !important;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
 }
 
 .fab-action-orange {
-  background: #fb923c !important;
-  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3) !important;
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important;
 }
 
 /* Enhanced dialogs */
 .dialog-card {
   width: 100%;
   max-width: 100%;
-  border-radius: 16px 16px 0 0;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
 }
 
 .custom-toolbar {
   background: linear-gradient(135deg, #008080 0%, #1e3a8a 100%) !important;
-  min-height: 48px;
+  min-height: 56px;
   padding: 8px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-toolbar {
-  min-height: 48px;
+  min-height: 56px;
   padding: 8px 16px;
 }
 
-/* Form Container and Field Spacing */
+/* Enhanced form styling */
+.form-section {
+  padding: 24px 20px !important;
+}
+
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 20px;
 }
 
 .form-field {
-  margin-bottom: 20px;
+  animation: formFieldSlide 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
-.form-field:last-child {
-  margin-bottom: 0;
+@keyframes formFieldSlide {
+  0% {
+    transform: translateY(20px) scale(0.98);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
-/* Field options section */
-.field-options {
-  border-top: 1px solid #e2e8f0;
-  background-color: #f8fafc;
+.custom-input {
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.custom-input :deep(.q-field__control) {
+  border-color: rgba(226, 232, 240, 0.8) !important;
+  border-width: 2px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  transition: all 0.3s ease;
+}
+
+.custom-input :deep(.q-field--focused .q-field__control) {
+  border-color: #008080 !important;
+  box-shadow:
+    0 0 0 3px rgba(0, 128, 128, 0.15),
+    0 4px 12px rgba(0, 128, 128, 0.1);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.custom-input :deep(.q-field__label) {
+  color: #64748b !important;
+  font-weight: 500;
+}
+
+.custom-input :deep(.q-field--focused .q-field__label) {
+  color: #008080 !important;
+}
+
+.input-icon {
+  color: #64748b !important;
+  transition: all 0.3s ease;
+}
+
+.custom-input:focus-within .input-icon {
+  color: #008080 !important;
+  transform: scale(1.1);
+}
+
+.toggle-icon {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.toggle-icon:hover {
+  color: #008080 !important;
+  transform: scale(1.2);
+}
+
+/* Enhanced delete dialog */
+.delete-dialog-card {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.delete-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px !important;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+}
+
+.delete-icon-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.delete-warning-icon {
+  color: #ef4444 !important;
+  position: relative;
+  z-index: 2;
+}
+
+.warning-pulse {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 50%;
+  animation: warningPulse 2s infinite ease-in-out;
+}
+
+@keyframes warningPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.delete-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ef4444 !important;
+  text-align: center;
+}
+
+.delete-content {
+  padding: 16px 24px !important;
+  text-align: center;
+  color: #475569 !important;
+  line-height: 1.5;
+}
+
+.delete-actions {
+  padding: 16px 24px !important;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cancel-btn {
+  color: #64748b !important;
+  background: rgba(100, 116, 139, 0.1);
   border-radius: 8px;
-  padding: 16px;
-  margin-top: 20px;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
 }
 
-/* Enhanced platform select */
+.cancel-btn:hover {
+  background: rgba(100, 116, 139, 0.15);
+  transform: translateY(-1px);
+}
+
+.delete-confirm-btn {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.delete-confirm-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Enhanced import dialog */
+.import-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px !important;
+}
+
+.import-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #475569 !important;
+}
+
+.import-options {
+  padding: 0 24px 16px !important;
+}
+
+.custom-option-group :deep(.q-radio__inner) {
+  color: #008080 !important;
+}
+
+.import-actions {
+  padding: 16px 24px !important;
+  justify-content: flex-end;
+}
+
+.continue-btn {
+  color: #008080 !important;
+  background: rgba(0, 128, 128, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.continue-btn:hover {
+  background: rgba(0, 128, 128, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Platform select enhancements */
 .platform-select :deep(.q-field__control) {
   border-radius: 12px !important;
-  border-color: #e2e8f0 !important;
+  border-color: rgba(226, 232, 240, 0.8) !important;
   transition: all 0.3s ease;
 }
 
 .platform-select :deep(.q-field--focused .q-field__control) {
   border-color: #008080 !important;
-  box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1) !important;
+  box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.15) !important;
 }
 
 .platform-option {
   padding: 12px 16px !important;
+  transition: background 0.2s ease;
+}
+
+.platform-option:hover {
+  background: rgba(0, 128, 128, 0.05) !important;
 }
 
 .platform-option-icon {
@@ -1242,7 +1873,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .selected-platform-icon {
@@ -1254,75 +1885,140 @@ onMounted(async () => {
   justify-content: center;
 }
 
-/* Form Styling */
-.custom-input :deep(.q-field__control) {
-  border-color: #e2e8f0 !important;
-  border-radius: 12px !important;
-  transition: all 0.3s ease;
-}
-
-.custom-input :deep(.q-field--focused .q-field__control) {
-  border-color: #008080 !important;
-  box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.1) !important;
-}
-
-.custom-input :deep(.q-field__label) {
-  color: #64748b !important;
-}
-
-.custom-input :deep(.q-field--focused .q-field__label) {
-  color: #008080 !important;
-}
-
-.input-icon {
-  color: #64748b !important;
-}
-
-.custom-input:focus-within .input-icon {
-  color: #008080 !important;
-}
-
-/* Custom toggles and other form elements */
-.custom-toggle :deep(.q-toggle__inner) {
-  color: #008080 !important;
-}
-
-.continue-btn {
-  color: #008080 !important;
-}
-
-.custom-option-group :deep(.q-radio__inner) {
-  color: #008080 !important;
-}
-
-.cancel-btn {
-  color: #64748b !important;
-}
-
 /* Responsive Design */
 @media (max-width: 480px) {
+  .search-container {
+    padding: 16px 12px;
+  }
+
   .credential-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
   }
 
   .credential-title {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .credential-username {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .dialog-header {
-    padding: 16px;
+    padding: 20px 16px;
   }
 
   .dialog-platform-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
   }
+
+  .password-section-wrapper {
+    padding: 16px !important;
+  }
+
+  .actions-section {
+    padding: 12px 16px !important;
+  }
+
+  .form-section {
+    padding: 20px 16px !important;
+  }
+}
+
+/* Dark mode enhancements */
+.body--dark .password-manager-app {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
+.body--dark .search-container {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-bottom-color: rgba(71, 85, 105, 0.5);
+}
+
+.body--dark .search-input :deep(.q-field__control) {
+  background: linear-gradient(135deg, #334155 0%, #475569 100%) !important;
+  border-color: rgba(71, 85, 105, 0.6) !important;
+}
+
+.body--dark .search-input :deep(.q-field--focused .q-field__control) {
+  background: #334155 !important;
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.15),
+    0 4px 12px rgba(16, 185, 129, 0.1) !important;
+}
+
+.body--dark .search-input :deep(.q-field__native) {
+  color: #e5e7eb !important;
+}
+
+.body--dark .search-input :deep(.q-field__label) {
+  color: #94a3b8 !important;
+}
+
+.body--dark .search-icon {
+  color: #94a3b8 !important;
+}
+
+.body--dark .search-input:focus-within .search-icon {
+  color: #10b981 !important;
+}
+
+.body--dark .empty-state {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+.body--dark .empty-title {
+  color: #94a3b8 !important;
+}
+
+.body--dark .empty-description {
+  color: #64748b !important;
+}
+
+.body--dark .credential-card {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-color: rgba(71, 85, 105, 0.6) !important;
+}
+
+.body--dark .credential-card:hover {
+  background: #1e293b;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+}
+
+.body--dark .credential-title {
+  color: #e5e7eb !important;
+}
+
+.body--dark .credential-card:hover .credential-title {
+  color: #10b981 !important;
+}
+
+.body--dark .credential-username {
+  color: #94a3b8 !important;
+}
+
+.body--dark .credential-card:hover .credential-username {
+  color: #e5e7eb !important;
+}
+
+.body--dark .platform-badge {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.2) 100%);
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.body--dark .visibility-btn {
+  color: #94a3b8 !important;
+}
+
+.body--dark .visibility-btn:hover {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.1) !important;
 }
 </style>
