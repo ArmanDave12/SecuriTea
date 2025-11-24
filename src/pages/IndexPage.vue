@@ -220,133 +220,15 @@
       </transition>
     </div>
 
-    <!-- Enhanced Add Credential Dialog -->
-    <q-dialog
+    <!-- Add Credential Dialog Component -->
+    <AddCredsDialog
       v-model="addDialogOpen"
-      position="bottom"
-      transition-show="slide-up"
-      transition-hide="slide-down"
-    >
-      <transition name="dialog-content" appear>
-        <q-card class="dialog-card">
-          <q-toolbar class="custom-toolbar text-white mobile-toolbar">
-            <q-btn flat round dense icon="arrow_back" v-close-popup @click="resetNewCredential" />
-            <q-toolbar-title class="text-body1">New Credential</q-toolbar-title>
-            <q-btn flat dense label="Save" :disable="!isFormValid()" @click="addCredsFunc" />
-          </q-toolbar>
-
-          <q-card-section class="form-section">
-            <q-form @submit="addCredsFunc" class="form-container">
-              <!-- Enhanced form fields with staggered animations -->
-              <div class="form-field" :style="{ animationDelay: '0.1s' }">
-                <q-select
-                  dense
-                  outlined
-                  v-model="newCredential.platform"
-                  :options="platformOptions"
-                  label="Platform (Optional)"
-                  class="platform-select custom-input"
-                  clearable
-                  option-label="title"
-                  option-value="name"
-                  emit-value
-                  map-options
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="category" class="input-icon" size="sm" />
-                  </template>
-                  <template v-slot:option="scope">
-                    <q-item v-bind="scope.itemProps" class="platform-option">
-                      <q-item-section avatar>
-                        <div
-                          class="platform-option-icon"
-                          :style="{ backgroundColor: scope.opt.color }"
-                        >
-                          <q-icon :name="scope.opt.icon" color="white" size="18px" />
-                        </div>
-                      </q-item-section>
-                      <q-item-section>
-                        <q-item-label class="text-weight-medium">{{
-                          scope.opt.title
-                        }}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                  <template v-slot:selected-item="scope">
-                    <div class="row items-center no-wrap" v-if="scope.opt">
-                      <div
-                        class="selected-platform-icon"
-                        :style="{ backgroundColor: scope.opt.color }"
-                      >
-                        <q-icon :name="scope.opt.icon" color="white" size="14px" />
-                      </div>
-                      <span class="q-ml-sm">{{ scope.opt.title }}</span>
-                    </div>
-                  </template>
-                </q-select>
-              </div>
-
-              <div class="form-field" :style="{ animationDelay: '0.2s' }">
-                <q-input
-                  dense
-                  outlined
-                  v-model="newCredential.email"
-                  :label="requireEmail ? 'Email *' : 'Email'"
-                  class="custom-input"
-                  :rules="requireEmail ? [(val) => !!val || 'Email is required'] : []"
-                  type="email"
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="mail" class="input-icon" size="sm" />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="form-field" :style="{ animationDelay: '0.3s' }">
-                <q-input
-                  dense
-                  outlined
-                  v-model="newCredential.username"
-                  :label="requireUsername ? 'Username *' : 'Username'"
-                  class="custom-input"
-                  :rules="requireUsername ? [(val) => !!val || 'Username is required'] : []"
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="person" class="input-icon" size="sm" />
-                  </template>
-                </q-input>
-              </div>
-
-              <div class="form-field" :style="{ animationDelay: '0.4s' }">
-                <q-input
-                  dense
-                  outlined
-                  v-model="newCredential.password"
-                  label="Password *"
-                  class="custom-input"
-                  :type="showNewPassword ? 'text' : 'password'"
-                  :rules="[(val) => !!val || 'Password is required']"
-                >
-                  <template v-slot:prepend>
-                    <q-icon name="vpn_key" class="input-icon" size="sm" />
-                  </template>
-                  <template v-slot:append>
-                    <q-icon
-                      :name="showNewPassword ? 'visibility_off' : 'visibility'"
-                      class="cursor-pointer input-icon toggle-icon"
-                      size="sm"
-                      @click="toggleNewPassword"
-                    />
-                  </template>
-                </q-input>
-              </div>
-            </q-form>
-          </q-card-section>
-        </q-card>
-      </transition>
-    </q-dialog>
-
-    <!-- Keep other dialogs with similar enhancements but condensed for space -->
+      :platform-options="platformOptions"
+      :require-email="requireEmail"
+      :require-username="requireUsername"
+      :require-password="requirePassword"
+      @add-creds="addCredsFunc"
+    />
 
     <!-- Enhanced Edit Credential Dialog -->
     <q-dialog
@@ -478,40 +360,13 @@
       </transition>
     </q-dialog>
 
-    <!-- Enhanced Import Dialog -->
-    <q-dialog
+    <!-- Import Credentials Dialog Component -->
+    <ImportCredsDialog
       v-model="importDialogOpen"
-      position="bottom"
-      transition-show="slide-up"
-      transition-hide="slide-down"
-    >
-      <transition name="dialog-content" appear>
-        <q-card class="dialog-card">
-          <q-card-section class="import-header">
-            <div class="import-title">Import Credentials</div>
-            <q-btn icon="close" flat round dense v-close-popup />
-          </q-card-section>
-
-          <q-card-section class="import-options">
-            <q-option-group
-              v-model="importOption"
-              :options="[
-                { label: 'Import from CSV', value: 'csv' },
-                { label: 'Import from Google', value: 'google' },
-                { label: 'Import from LastPass', value: 'lastpass' },
-                { label: 'Import from 1Password', value: '1password' },
-              ]"
-              class="custom-option-group"
-              dense
-            />
-          </q-card-section>
-
-          <q-card-actions class="import-actions">
-            <q-btn flat class="continue-btn" label="Continue" @click="continueImport" />
-          </q-card-actions>
-        </q-card>
-      </transition>
-    </q-dialog>
+      :credentials="credentials"
+      @import-complete="handleImportComplete"
+      @export-complete="handleExportComplete"
+    />
 
     <!-- Password Generator Component -->
     <GenerateBtn
@@ -533,6 +388,8 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { socMeds } from 'src/composables/usePlatforms'
 import GenerateBtn from 'src/components/GenerateBtn.vue'
+import AddCredsDialog from 'src/components/AddCredsDialog.vue'
+import ImportCredsDialog from 'src/components/ImportCredsDialog.vue'
 
 // State
 const search = ref('')
@@ -540,7 +397,6 @@ const addDialogOpen = ref(false)
 const editDialogOpen = ref(false)
 const deleteDialogOpen = ref(false)
 const passwordDialogOpen = ref(false)
-const showNewPassword = ref(false)
 const showEditPassword = ref(false)
 const passwordGeneratorOpen = ref(false)
 const importDialogOpen = ref(false)
@@ -552,6 +408,7 @@ const router = useRouter()
 // Field requirements (configurable)
 const requireEmail = ref(true)
 const requireUsername = ref(false)
+const requirePassword = ref(true)
 const showFieldOptions = ref(false)
 
 // Platform options for dropdown
@@ -583,20 +440,7 @@ const editingCredential = ref({
 })
 const deleteCredential = ref(null)
 
-// New credential template
-const newCredential = ref({
-  platform: '',
-  email: '',
-  username: '',
-  password: '',
-  isVisible: false,
-})
-
-// Enhanced password visibility toggles with animation feedback
-const toggleNewPassword = () => {
-  showNewPassword.value = !showNewPassword.value
-}
-
+// Enhanced password visibility toggle for edit dialog
 const toggleEditPassword = () => {
   showEditPassword.value = !showEditPassword.value
 }
@@ -681,17 +525,10 @@ const loadCredentials = async () => {
   credentials.value = response || []
 }
 
-const addCredsFunc = async () => {
-  if (!isFormValid()) return
-
-  await addCredential(
-    newCredential.value.email,
-    newCredential.value.password,
-    newCredential.value.username,
-    newCredential.value.platform,
-  )
+// Updated addCredsFunc to handle the new event structure from AddCredsDialog
+const addCredsFunc = async (formData) => {
+  await addCredential(formData.email, formData.password, formData.username, formData.platform)
   addDialogOpen.value = false
-  resetNewCredential()
   await loadCredentials()
 }
 
@@ -733,35 +570,7 @@ const findCredentialIndex = (credential) => {
 }
 
 const openAddDialog = () => {
-  resetNewCredential()
   addDialogOpen.value = true
-}
-
-const resetNewCredential = () => {
-  newCredential.value = {
-    platform: '',
-    email: '',
-    username: '',
-    password: '',
-    isVisible: false,
-  }
-  showNewPassword.value = false
-}
-
-const isFormValid = () => {
-  if (!newCredential.value.password?.trim()) return false
-
-  const hasEmail = newCredential.value.email?.trim()
-  const hasUsername = newCredential.value.username?.trim()
-
-  if (requireEmail.value && !hasEmail) return false
-  if (requireUsername.value && !hasUsername) return false
-
-  if (!requireEmail.value && !requireUsername.value) {
-    return hasEmail || hasUsername
-  }
-
-  return true
 }
 
 const copyPassword = (password) => {
@@ -888,8 +697,8 @@ const onPasswordGenerated = (password) => {
 }
 
 const onPasswordCopied = (password) => {
-  // Set the generated password to the new credential form
-  newCredential.value.password = password
+  // This could be used to set a generated password to a form if needed
+  console.log('Password copied from generator:', password)
 }
 
 const openPasswordGenerator = () => {
@@ -901,15 +710,49 @@ const openImportDialog = () => {
   importDialogOpen.value = true
 }
 
-const continueImport = () => {
-  importDialogOpen.value = false
+// Updated import handler to work with the new ImportCredsDialog component
+const handleImportComplete = async ({ credentials, count }) => {
+  try {
+    // Process each credential through the API
+    for (const cred of credentials) {
+      await addCredential(
+        cred.email || '',
+        cred.password || '',
+        cred.username || '',
+        cred.platform || '',
+      )
+    }
 
+    // Reload credentials to show imported ones
+    await loadCredentials()
+
+    // Show success notification
+    $q.notify({
+      color: 'positive',
+      position: 'top',
+      message: `Successfully imported ${count} credentials from CSV`,
+      icon: 'cloud_done',
+      timeout: 3000,
+    })
+  } catch (error) {
+    console.error('Failed to import credentials:', error)
+    $q.notify({
+      color: 'negative',
+      position: 'top',
+      message: 'Failed to import some credentials',
+      icon: 'error',
+      timeout: 3000,
+    })
+  }
+}
+
+const handleExportComplete = ({ count }) => {
   $q.notify({
     color: 'positive',
     position: 'top',
-    message: `Import from ${importOption.value.toUpperCase()} started`,
-    icon: 'cloud_download',
-    timeout: 1500,
+    message: `Successfully exported ${count} credentials to CSV`,
+    icon: 'cloud_done',
+    timeout: 3000,
   })
 }
 
@@ -1803,86 +1646,6 @@ onMounted(async () => {
 .delete-confirm-btn:hover {
   background: rgba(239, 68, 68, 0.15);
   transform: translateY(-1px);
-}
-
-/* Enhanced import dialog */
-.import-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px 16px !important;
-}
-
-.import-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #475569 !important;
-}
-
-.import-options {
-  padding: 0 24px 16px !important;
-}
-
-.custom-option-group :deep(.q-radio__inner) {
-  color: #008080 !important;
-}
-
-.import-actions {
-  padding: 16px 24px !important;
-  justify-content: flex-end;
-}
-
-.continue-btn {
-  color: #008080 !important;
-  background: rgba(0, 128, 128, 0.1);
-  border-radius: 8px;
-  padding: 8px 16px;
-  transition: all 0.3s ease;
-}
-
-.continue-btn:hover {
-  background: rgba(0, 128, 128, 0.15);
-  transform: translateY(-1px);
-}
-
-/* Platform select enhancements */
-.platform-select :deep(.q-field__control) {
-  border-radius: 12px !important;
-  border-color: rgba(226, 232, 240, 0.8) !important;
-  transition: all 0.3s ease;
-}
-
-.platform-select :deep(.q-field--focused .q-field__control) {
-  border-color: #008080 !important;
-  box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.15) !important;
-}
-
-.platform-option {
-  padding: 12px 16px !important;
-  transition: background 0.2s ease;
-}
-
-.platform-option:hover {
-  background: rgba(0, 128, 128, 0.05) !important;
-}
-
-.platform-option-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.selected-platform-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Responsive Design */

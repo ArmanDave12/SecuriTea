@@ -67,7 +67,7 @@
                   </q-item>
 
                   <!-- Settings option -->
-                  <q-item clickable v-close-popup to="/settings" class="menu-item">
+                  <q-item clickable v-close-popup to="/main/settings" class="menu-item">
                     <q-item-section avatar>
                       <q-icon name="settings" class="menu-icon" />
                     </q-item-section>

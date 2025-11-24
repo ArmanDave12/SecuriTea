@@ -48,7 +48,6 @@ export function useSync() {
             nickname: user.nickname,
             pin: user.pin,
             createdAt: user.createdAt,
-            profileImage: user.profileImage,
           })
 
           // Mark as synced and remove originalId

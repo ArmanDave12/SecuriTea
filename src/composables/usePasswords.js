@@ -60,6 +60,7 @@ export function usePasswords() {
     loading.value = true
     try {
       const creds = await dexieDB.credentials.filter((u) => u.userId === userId).toArray()
+      console.log('[Get Credentials] Found', creds.length, 'credentials')
       return creds.map((c) => ({
         ...c,
         password: decryptPin(c.password),
@@ -73,23 +74,51 @@ export function usePasswords() {
     }
   }
 
-  const getCredsInFirebase = async () => {
+  const getCredsInFirebase = async (getAllCredentials = false) => {
     try {
-      const userRef = dbRefFunc(realtimeDB, `credentials/${userId}`)
+      // If getAllCredentials is true, get all credentials from the root
+      const userRef = getAllCredentials
+        ? dbRefFunc(realtimeDB, 'credentials')
+        : dbRefFunc(realtimeDB, `credentials/${userId}`)
+
       const snapshot = await get(userRef)
 
       if (!snapshot.exists()) return []
 
       const data = snapshot.val()
 
-      return Object.keys(data).map((key) => ({
-        id: key, // Firebase record ID
-        userId: data[key].userId,
-        email: data[key].email,
-        password: decryptPin(data[key].password),
-        username: data[key].username,
-        createdAt: data[key].createdAt,
-      }))
+      if (getAllCredentials) {
+        // When getting all credentials, we need to iterate through all users
+        const allCredentials = []
+
+        Object.keys(data).forEach((userKey) => {
+          const userCredentials = data[userKey]
+          Object.keys(userCredentials).forEach((credKey) => {
+            allCredentials.push({
+              id: credKey,
+              userId: userCredentials[credKey].userId,
+              email: userCredentials[credKey].email,
+              password: decryptPin(userCredentials[credKey].password),
+              username: userCredentials[credKey].username,
+              createdAt: userCredentials[credKey].createdAt,
+              platform: userCredentials[credKey].platform,
+            })
+          })
+        })
+
+        return allCredentials
+      } else {
+        // Original logic for specific user
+        return Object.keys(data).map((key) => ({
+          id: key,
+          userId: data[key].userId,
+          email: data[key].email,
+          password: decryptPin(data[key].password),
+          username: data[key].username,
+          createdAt: data[key].createdAt,
+          platform: data[key].platform,
+        }))
+      }
     } catch (err) {
       console.error('[getCredsInFirebase] Error:', err)
       return []
@@ -104,7 +133,7 @@ export function usePasswords() {
 
       if (!exists) {
         await dexieDB.credentials.add({
-          userId: `${cred.userId}-${cred.createdAt}`,
+          userId: `${cred.userId}`,
           email: cred.email,
           password: encryptPin(cred.password),
           username: cred.username,
@@ -175,6 +204,14 @@ export function usePasswords() {
     } finally {
       loading.value = false
     }
+  }
+
+  const getAllCreds = async () => {
+    const creds = await dexieDB.credentials.toArray()
+    return creds.map((c) => ({
+      ...c,
+      password: decryptPin(c.password),
+    }))
   }
 
   return {

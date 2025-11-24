@@ -3,7 +3,7 @@
     <!-- Fixed Height Layout - No Scrolling -->
     <div class="main-layout">
       <!-- Top Section with Back Button -->
-      <div class="top-section q-mt-sm">
+      <div class="top-section q-mt-lg">
         <q-btn
           flat
           round
@@ -11,20 +11,55 @@
           color="white"
           size="sm"
           @click="goBack"
-          class="back-btn"
+          class="back-btn q-mt-md"
         />
-        <div class="status-dots">
+        <div class="status-dots q-mt-md">
           <div class="dot active"></div>
           <div class="dot"></div>
           <div class="dot"></div>
         </div>
       </div>
 
-      <!-- Center Hero Content -->
-      <div class="hero-center">
-        <div class="secret-icon">🔐</div>
-        <div class="main-title">Secret Zone</div>
-        <div class="subtitle">Developer Console Unlocked</div>
+      <!-- Center Monitor Content -->
+      <div class="monitor-center">
+        <CredentialsMonitor :get-all-credentials="true" ref="monitorRef" />
+      </div>
+
+      <!-- Stats Section -->
+      <div class="stats-section">
+        <div class="stats-container">
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ totalRecords }}</div>
+              <div class="stat-label">Total Records</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ uniqueUsers }}</div>
+              <div class="stat-label">Unique Users</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">🌐</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ uniquePlatforms }}</div>
+              <div class="stat-label">Platforms</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">🔄</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ connectionStatus }}</div>
+              <div class="stat-label">Status</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Bottom Action Section -->
@@ -148,8 +183,8 @@
     <q-dialog v-model="welcomeDialog" persistent>
       <div class="welcome-popup">
         <div class="popup-icon">🎉</div>
-        <div class="popup-title">Secret Unlocked!</div>
-        <div class="popup-text">You found the developer panel</div>
+        <div class="popup-title">Developer Console Active!</div>
+        <div class="popup-text">Database monitor initialized</div>
         <q-btn
           color="primary"
           label="Continue"
@@ -242,7 +277,7 @@
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="loading-screen">
       <q-spinner-ios color="white" size="24px" />
-      <div class="loading-text">Loading...</div>
+      <div class="loading-text">Initializing Developer Console...</div>
     </div>
   </div>
 </template>
@@ -253,8 +288,9 @@ import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { usePasswords } from 'src/composables/usePasswords'
 import CryptoJS from 'crypto-js'
+import CredentialsMonitor from 'src/components/CredentialsMonitor.vue'
 
-const { syncFromFirebaseToDexie, removeCredentials } = usePasswords()
+const { syncFromFirebaseToDexie, removeCredentials, getCredsInFirebase } = usePasswords()
 const $q = useQuasar()
 
 // PIN Security
@@ -281,6 +317,40 @@ const secretKeyErrorMessage = ref('')
 const hasEncryptedKeyError = ref(false)
 const encryptedKeyErrorMessage = ref('')
 const router = useRouter()
+
+// Stats data
+const monitorRef = ref(null)
+const totalRecords = ref(0)
+const uniqueUsers = ref(0)
+const uniquePlatforms = ref(0)
+const connectionStatus = ref('OFFLINE')
+
+// Computed stats
+const updateStats = async () => {
+  try {
+    const credentials = await getCredsInFirebase(true)
+    totalRecords.value = credentials?.length || 0
+
+    if (credentials && credentials.length > 0) {
+      const users = new Set(credentials.map((c) => c.userId).filter((u) => u))
+      uniqueUsers.value = users.size
+
+      const platforms = new Set(credentials.map((c) => c.platform).filter((p) => p))
+      uniquePlatforms.value = platforms.size
+
+      connectionStatus.value = 'ONLINE'
+    } else {
+      uniqueUsers.value = 0
+      uniquePlatforms.value = 0
+      connectionStatus.value = credentials === null ? 'ERROR' : 'EMPTY'
+    }
+  } catch (error) {
+    connectionStatus.value = 'ERROR'
+    totalRecords.value = 0
+    uniqueUsers.value = 0
+    uniquePlatforms.value = 0
+  }
+}
 
 // PIN Functions
 const addPinDigit = (digit) => {
@@ -369,6 +439,9 @@ onMounted(async () => {
 
 const closeWelcomeDialog = () => {
   welcomeDialog.value = false
+
+  // Update stats when console activates
+  updateStats()
 
   $q.notify({
     color: 'positive',
@@ -593,13 +666,13 @@ const goBack = async () => {
   padding: 16px;
 }
 
-/* Top Section - 15% */
+/* Top Section - 8% */
 .top-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 15%;
-  min-height: 60px;
+  height: 8%;
+  min-height: 45px;
 }
 
 .back-btn {
@@ -627,56 +700,82 @@ const goBack = async () => {
   border-radius: 3px;
 }
 
-/* Hero Center - 50% */
-.hero-center {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+/* Monitor Center - 50% */
+.monitor-center {
   height: 50%;
-  text-align: center;
-  color: white;
-}
-
-.secret-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-.main-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  background: linear-gradient(45deg, #60a5fa, #3b82f6, #2563eb);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.subtitle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  max-width: 200px;
-}
-
-/* Action Section - 35% */
-.action-section {
-  height: 35%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 4px 0;
+}
+
+/* Stats Section - 22% */
+.stats-section {
+  height: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+.stat-info {
+  flex: 1;
+  text-align: left;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #60a5fa;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Action Section - 20% */
+.action-section {
+  height: 20%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
 }
 
 .action-row {
@@ -982,22 +1081,9 @@ const goBack = async () => {
 }
 
 /* Mobile Responsive */
-@media (max-width: 360px) {
+@media (max-width: 480px) {
   .main-layout {
     padding: 12px;
-  }
-
-  .secret-icon {
-    font-size: 40px;
-    margin-bottom: 12px;
-  }
-
-  .main-title {
-    font-size: 28px;
-  }
-
-  .subtitle {
-    font-size: 13px;
   }
 
   .action-btn {
@@ -1030,32 +1116,53 @@ const goBack = async () => {
     height: 48px;
     font-size: 16px;
   }
+
+  .monitor-center {
+    height: 48%;
+  }
+
+  .stats-section {
+    height: 24%;
+  }
+
+  .action-section {
+    height: 20%;
+  }
+
+  .stat-card {
+    padding: 8px 6px;
+    gap: 6px;
+  }
+
+  .stat-icon {
+    font-size: 16px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
 }
 
-@media (max-width: 320px) {
+@media (max-width: 360px) {
   .main-layout {
     padding: 10px;
   }
 
-  .secret-icon {
-    font-size: 36px;
-  }
-
-  .main-title {
-    font-size: 24px;
-  }
-
   .action-section {
-    gap: 10px;
+    gap: 8px;
   }
 
   .action-row {
-    gap: 10px;
+    gap: 8px;
   }
 
   .action-btn {
     padding: 10px 6px;
-    min-height: 60px;
+    min-height: 56px;
   }
 
   .keypad-btn {
@@ -1063,26 +1170,37 @@ const goBack = async () => {
     height: 44px;
     font-size: 14px;
   }
+
+  .stats-container {
+    gap: 8px;
+  }
+
+  .stat-card {
+    padding: 6px 4px;
+    gap: 4px;
+  }
+
+  .stat-icon {
+    font-size: 14px;
+  }
+
+  .stat-value {
+    font-size: 12px;
+  }
+
+  .stat-label {
+    font-size: 8px;
+  }
 }
 
 /* Landscape adjustments */
 @media (max-height: 500px) and (orientation: landscape) {
-  .hero-center {
-    height: 40%;
+  .monitor-center {
+    height: 50%;
   }
 
   .action-section {
     height: 40%;
-  }
-
-  .secret-icon {
-    font-size: 32px;
-    margin-bottom: 8px;
-  }
-
-  .main-title {
-    font-size: 24px;
-    margin-bottom: 4px;
   }
 
   .action-btn {
