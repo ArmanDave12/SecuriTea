@@ -194,6 +194,66 @@ const useAuth = () => {
     }
   }
 
+  const switchUser = async (targetUserId) => {
+    try {
+      // First, try to find the user in Dexie
+      const foundUser = await dexieDB.users.where('id').equals(targetUserId).first()
+
+      if (foundUser) {
+        // User exists in local DB
+        user.value = foundUser
+        localStorage.setItem('loggedInUser', JSON.stringify(foundUser))
+        success(`Switched to user: ${foundUser.nickname}`)
+        return {
+          success: true,
+          user: foundUser,
+        }
+      }
+
+      // If not found in Dexie, try to get from Firebase
+      const { ref, get } = await import('firebase/database')
+
+      const userRef = ref(db, `users/${targetUserId}`)
+      const snapshot = await get(userRef)
+
+      if (!snapshot.exists()) {
+        throw new Error('User not found')
+      }
+
+      const userData = snapshot.val()
+
+      // Save to Dexie
+      await dexieDB.users.add({
+        id: userData.id,
+        nickname: userData.nickname,
+        pin: userData.pin,
+        createdAt: userData.createdAt,
+        synced: true,
+      })
+
+      // Update current user
+      const userToStore = {
+        id: userData.id,
+        nickname: userData.nickname,
+        pin: userData.pin,
+        createdAt: userData.createdAt,
+      }
+
+      user.value = userToStore
+      localStorage.setItem('loggedInUser', JSON.stringify(userToStore))
+      success(`Switched to user: ${userData.nickname}`)
+
+      return {
+        success: true,
+        user: userToStore,
+      }
+    } catch (err) {
+      console.error('[switchUser] Error:', err)
+      notifyError('Failed to switch user')
+      throw err
+    }
+  }
+
   return {
     user,
     login,
@@ -202,6 +262,7 @@ const useAuth = () => {
     getCurrentUser,
     getAllUsers,
     updateCurrentUser,
+    switchUser,
     error,
     loading,
   }

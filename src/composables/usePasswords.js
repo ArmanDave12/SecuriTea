@@ -206,6 +206,70 @@ export function usePasswords() {
     }
   }
 
+  const loadUserCredentials = async (input) => {
+    try {
+      // Get all credentials from Firebase
+      const allCredentials = await getCredsInFirebase(true)
+
+      if (!allCredentials || allCredentials.length === 0) {
+        throw new Error('No credentials found in Firebase')
+      }
+
+      // Filter credentials by userId or nickname
+      const userCredentials = allCredentials.filter((cred) => {
+        if (cred.userId === input) {
+          return true
+        }
+
+        const userIdParts = cred.userId?.split('-')
+        if (userIdParts && userIdParts.length >= 2) {
+          const nicknameFromUserId = userIdParts[0]
+          return nicknameFromUserId.toLowerCase() === input.toLowerCase()
+        }
+
+        return false
+      })
+
+      if (userCredentials.length === 0) {
+        throw new Error(`No credentials found for "${input}"`)
+      }
+
+      // Get the userId of the first credential
+      const targetUserId = userCredentials[0].userId
+
+      // Switch to this user's auth context
+      const { switchUser } = useAuth()
+      await switchUser(targetUserId)
+
+      // Clear existing credentials
+      await dexieDB.credentials.clear()
+
+      // Save each credential to IndexedDB
+      for (const credential of userCredentials) {
+        await dexieDB.credentials.add({
+          userId: credential.userId,
+          email: credential.email,
+          password: encryptPin(credential.password),
+          username: credential.username,
+          createdAt: credential.createdAt,
+          platform: credential.platform,
+          firebaseKey: credential.id,
+          synced: true,
+        })
+      }
+
+      return {
+        success: true,
+        count: userCredentials.length,
+        credentials: userCredentials,
+        user: targetUserId,
+      }
+    } catch (error) {
+      console.error('[loadUserCredentials] Error:', error)
+      throw error
+    }
+  }
+
   const getAllCreds = async () => {
     const creds = await dexieDB.credentials.toArray()
     return creds.map((c) => ({
@@ -222,6 +286,7 @@ export function usePasswords() {
     removeCredentials,
     removeCredential,
     editCred,
+    loadUserCredentials,
     loading,
     error,
   }

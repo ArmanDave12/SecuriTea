@@ -80,13 +80,13 @@
         </div>
 
         <div class="action-row">
+          <div class="action-btn" @click="showLoadUserDialog">
+            <q-icon name="person_search" size="20px" />
+            <span>Load User</span>
+          </div>
           <div class="action-btn danger" @click="showClearData">
             <q-icon name="delete_sweep" size="20px" />
             <span>Clear All</span>
-          </div>
-          <div class="action-btn" @click="showSettings">
-            <q-icon name="settings" size="20px" />
-            <span>Settings</span>
           </div>
         </div>
       </div>
@@ -196,6 +196,48 @@
       </div>
     </q-dialog>
 
+    <!-- Load User Dialog -->
+    <q-dialog v-model="loadUserDialog" persistent>
+      <div class="load-user-popup">
+        <div class="popup-icon">👤</div>
+        <div class="popup-title">Load User Data</div>
+        <div class="popup-text">Enter nickname or user ID to load credentials from Firebase</div>
+
+        <q-input
+          v-model="loadUsername"
+          placeholder="Enter nickname or user ID..."
+          outlined
+          dark
+          color="blue-4"
+          class="load-input q-mb-md"
+          :error="hasLoadUsernameError"
+          :error-message="loadUsernameErrorMessage"
+          label="Nickname / User ID"
+          @keyup.enter="performLoadUser"
+        />
+
+        <div class="load-actions">
+          <q-btn
+            color="grey-7"
+            label="Cancel"
+            @click="closeLoadUserDialog"
+            rounded
+            no-caps
+            class="action-btn-dialog"
+          />
+          <q-btn
+            color="primary"
+            label="Load"
+            @click="performLoadUser"
+            rounded
+            no-caps
+            class="action-btn-dialog"
+            :loading="isLoadingUser"
+          />
+        </div>
+      </div>
+    </q-dialog>
+
     <!-- Decrypt Dialog -->
     <q-dialog v-model="decryptDialog" persistent>
       <div class="decrypt-popup">
@@ -290,7 +332,8 @@ import { usePasswords } from 'src/composables/usePasswords'
 import CryptoJS from 'crypto-js'
 import CredentialsMonitor from 'src/components/CredentialsMonitor.vue'
 
-const { syncFromFirebaseToDexie, removeCredentials, getCredsInFirebase } = usePasswords()
+const { syncFromFirebaseToDexie, removeCredentials, getCredsInFirebase, loadUserCredentials } =
+  usePasswords()
 const $q = useQuasar()
 
 // PIN Security
@@ -301,6 +344,13 @@ const pinErrorMessage = ref('')
 const correctPin = ref('1234') // You can change this or make it configurable
 const maxPinAttempts = ref(3)
 const pinAttempts = ref(0)
+
+// Load User Dialog
+const loadUserDialog = ref(false)
+const loadUsername = ref('')
+const hasLoadUsernameError = ref(false)
+const loadUsernameErrorMessage = ref('')
+const isLoadingUser = ref(false)
 
 // Existing states
 const welcomeDialog = ref(false)
@@ -413,6 +463,75 @@ const verifyPin = () => {
         pinErrorMessage.value = ''
       }, 2000)
     }, 500)
+  }
+}
+
+// Load User Functions
+const showLoadUserDialog = () => {
+  loadUserDialog.value = true
+  loadUsername.value = ''
+  hasLoadUsernameError.value = false
+  loadUsernameErrorMessage.value = ''
+}
+
+const closeLoadUserDialog = () => {
+  loadUserDialog.value = false
+  loadUsername.value = ''
+  hasLoadUsernameError.value = false
+  loadUsernameErrorMessage.value = ''
+}
+
+const performLoadUser = async () => {
+  // Reset error states
+  hasLoadUsernameError.value = false
+  loadUsernameErrorMessage.value = ''
+
+  const input = loadUsername.value.trim()
+
+  if (!input) {
+    hasLoadUsernameError.value = true
+    loadUsernameErrorMessage.value = 'Please enter a nickname or user ID'
+    return
+  }
+
+  isLoadingUser.value = true
+
+  try {
+    // Use the composable function
+    const result = await loadUserCredentials(input)
+
+    // Close the dialog
+    closeLoadUserDialog()
+
+    // Show success message
+    $q.notify({
+      color: 'positive',
+      position: 'top',
+      message: `Loaded ${result.count} credential(s) for: ${input}`,
+      caption: 'Saved to local database',
+      timeout: 3000,
+      icon: 'check_circle',
+    })
+
+    console.log('Loaded user credentials:', result)
+
+    // Navigate back to main page after a short delay
+    setTimeout(async () => {
+      await router.push('/main')
+    }, 1000)
+  } catch (error) {
+    console.error('Error loading user data:', error)
+    hasLoadUsernameError.value = true
+    loadUsernameErrorMessage.value = error.message || 'Failed to load user data from Firebase'
+
+    $q.notify({
+      color: 'negative',
+      position: 'top',
+      message: 'Failed to load user data',
+      timeout: 2500,
+    })
+  } finally {
+    isLoadingUser.value = false
   }
 }
 
@@ -625,15 +744,6 @@ const showClearData = () => {
         timeout: 2000,
       })
     }, 2000)
-  })
-}
-
-const showSettings = () => {
-  $q.notify({
-    color: 'info',
-    message: 'Settings panel coming soon...',
-    position: 'top',
-    timeout: 2000,
   })
 }
 
@@ -1207,5 +1317,38 @@ const goBack = async () => {
     min-height: 56px;
     padding: 12px 8px;
   }
+}
+
+.load-user-popup {
+  background: #1f2937;
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  color: white;
+  min-width: 320px;
+  max-width: 90vw;
+}
+
+.load-input {
+  margin-top: 16px;
+}
+
+.load-input :deep(.q-field__control) {
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+}
+
+.load-input :deep(.q-field__native) {
+  color: white;
+}
+
+.load-input :deep(.q-placeholder) {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.load-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
 }
 </style>
