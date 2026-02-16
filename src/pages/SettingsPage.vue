@@ -57,14 +57,20 @@
 
               <div class="setting-item">
                 <div class="setting-main">
-                  <q-icon name="fingerprint" size="18px" class="item-icon" />
-                  <span class="item-text">Biometric Authentication</span>
+                  <q-icon :name="getBiometricIcon()" size="18px" class="item-icon" />
+                  <div class="item-content">
+                    <span class="item-text">{{ getBiometricText() }}</span>
+                    <span v-if="!biometricAvailable" class="item-subtitle"
+                      >Not available on this device</span
+                    >
+                  </div>
                 </div>
                 <q-toggle
                   v-model="useFingerprint"
+                  :disable="!biometricAvailable"
                   color="teal"
                   size="sm"
-                  @update:model-value="saveFingerprintSetting"
+                  @update:model-value="toggleBiometric"
                   class="enhanced-toggle"
                 />
               </div>
@@ -103,7 +109,7 @@
                 </div>
               </div>
 
-              <div class="setting-item clickable" @click="notifyFeature">
+              <!-- <div class="setting-item clickable" @click="notifyFeature">
                 <div class="setting-main">
                   <q-icon name="palette" size="18px" class="item-icon" />
                   <span class="item-text">Theme Settings</span>
@@ -111,6 +117,20 @@
                 <div class="nav-icon-wrapper">
                   <q-icon name="chevron_right" size="16px" class="nav-icon" />
                 </div>
+              </div> -->
+              <div class="setting-item">
+                <div class="setting-main">
+                  <q-icon name="dark_mode" size="18px" class="item-icon" />
+                  <span class="item-text">Dark Mode</span>
+                </div>
+                <q-toggle
+                  :model-value="isDarkMode"
+                  @update:model-value="toggleDarkMode"
+                  color="teal"
+                  class="enhanced-toggle"
+                  checked-icon="dark_mode"
+                  unchecked-icon="light_mode"
+                />
               </div>
             </div>
           </transition>
@@ -315,13 +335,20 @@ import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import useAuth from 'src/composables/useAuth'
 import AboutDialog from 'src/components/AboutDialog.vue'
+import BiometricService from 'src/services/biometric'
+import { useDarkMode } from 'src/composables/useDarkMode'
+
+const { isDarkMode, toggleDarkMode } = useDarkMode()
 const { getCurrentUser, updateCurrentUser } = useAuth()
 const $q = useQuasar()
+const biometricService = new BiometricService()
 
 // User data
 const currentUser = ref(null)
 const tempProfileName = ref('')
 const useFingerprint = ref(false)
+const biometricAvailable = ref(false)
+const biometricType = ref('biometric')
 
 // PIN change data
 const currentPin = ref('')
@@ -339,18 +366,78 @@ const showAboutDialog = ref(false)
 const isCordova = ref(false)
 const isCapacitor = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   isCordova.value = !!window.cordova
   isCapacitor.value = !!window.Capacitor
-  loadCurrentUser()
+  await loadCurrentUser()
+  await checkBiometricAvailability()
 })
 
+async function checkBiometricAvailability() {
+  biometricAvailable.value = await biometricService.isAvailable()
+  if (biometricAvailable.value) {
+    biometricType.value = await biometricService.getBiometricType()
+  }
+}
+
 // Load current user data
-function loadCurrentUser() {
+async function loadCurrentUser() {
   const user = getCurrentUser()
   if (user) {
     currentUser.value = user
     tempProfileName.value = user.name || ''
+    useFingerprint.value = await biometricService.isBiometricEnabled()
+  }
+}
+
+function getBiometricIcon() {
+  switch (biometricType.value?.toLowerCase()) {
+    case 'faceid':
+    case 'face':
+      return 'face'
+    case 'touchid':
+    case 'fingerprint':
+      return 'fingerprint'
+    default:
+      return 'fingerprint'
+  }
+}
+
+function getBiometricText() {
+  if (!biometricAvailable.value) {
+    return 'Biometric Authentication'
+  }
+
+  switch (biometricType.value?.toLowerCase()) {
+    case 'faceid':
+    case 'face':
+      return 'Face ID Authentication'
+    case 'touchid':
+    case 'fingerprint':
+      return 'Fingerprint Authentication'
+    default:
+      return 'Biometric Authentication'
+  }
+}
+
+async function toggleBiometric(enabled) {
+  if (!biometricAvailable.value) {
+    useFingerprint.value = false
+    return
+  }
+
+  try {
+    if (enabled) {
+      const success = await biometricService.enableBiometric()
+      if (!success) {
+        useFingerprint.value = false
+      }
+    } else {
+      await biometricService.disableBiometric()
+    }
+  } catch (error) {
+    console.error('Error toggling biometric:', error)
+    useFingerprint.value = !enabled // Revert toggle
   }
 }
 
@@ -396,6 +483,7 @@ async function saveProfile() {
     const result = await updateCurrentUser(updateData)
     if (result) {
       profileDialog.value = false
+      await loadCurrentUser() // Reload user data
     }
   } catch (error) {
     console.error('Error updating profile:', error)
@@ -458,6 +546,11 @@ async function savePin() {
         position: 'top',
       })
       closePinDialog()
+
+      // If biometric is enabled, update stored credentials
+      if (useFingerprint.value) {
+        await biometricService.enableBiometric() // Re-enable with new credentials
+      }
     }
   } catch (error) {
     console.error('Error updating PIN:', error)
@@ -473,15 +566,6 @@ async function savePin() {
 }
 
 function notifyFeature() {
-  $q.notify({
-    color: 'info',
-    message: '🚧 This feature is still under construction!',
-    icon: 'construction',
-    position: 'top',
-  })
-}
-
-async function saveFingerprintSetting() {
   $q.notify({
     color: 'info',
     message: '🚧 This feature is still under construction!',
@@ -1028,12 +1112,26 @@ async function saveFingerprintSetting() {
   transform: scale(1.1);
 }
 
+.item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
 .item-text {
   font-size: 15px;
   font-weight: 600;
   color: #003366;
   line-height: 1.3;
   transition: color 0.3s ease;
+}
+
+.item-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 .setting-item.clickable:hover .item-text {
@@ -1480,5 +1578,47 @@ async function saveFingerprintSetting() {
 
 .settings-page {
   overflow-x: hidden;
+}
+
+body.body--dark .settings-page {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #0f0f0f 100%);
+}
+
+body.body--dark .settings-section {
+  background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+body.body--dark .profile-section {
+  background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.body--dark .section-title {
+  color: #00a8a8;
+}
+
+body.body--dark .item-text {
+  color: #e2e8f0;
+}
+
+body.body--dark .setting-item:not(:last-child) {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+body.body--dark .setting-item.clickable:hover {
+  background: rgba(0, 168, 168, 0.1);
+}
+
+body.body--dark .header-bar {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+body.body--dark .app-title {
+  color: #00a8a8;
 }
 </style>

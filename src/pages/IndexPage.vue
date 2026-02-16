@@ -73,6 +73,7 @@
                   <span v-if="getPlatformInfo(credential).platformName" class="platform-badge">
                     {{ getPlatformInfo(credential).platformName }}
                   </span>
+                  <span v-else class="platform-badge">{{ credential.platform || 'Unknown' }}</span>
                 </div>
                 <div class="credential-username">
                   {{ credential.email || 'No Email' }}

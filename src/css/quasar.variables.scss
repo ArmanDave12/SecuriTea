@@ -12,14 +12,73 @@
 // to match your app's branding.
 // Tip: Use the "Theme Builder" on Quasar's documentation website.
 
-$primary   : #1976D2;
-$secondary : #26A69A;
-$accent    : #9C27B0;
+// Light Mode Colors
+$primary: #1976d2;
+$secondary: #26a69a;
+$accent: #9c27b0;
 
-$dark      : #1D1D1D;
-$dark-page : #121212;
+$positive: #21ba45;
+$negative: #c10015;
+$info: #31ccec;
+$warning: #f2c037;
 
-$positive  : #21BA45;
-$negative  : #C10015;
-$info      : #31CCEC;
-$warning   : #F2C037;
+// Dark Mode Colors
+$dark: #1d1d1d;
+$dark-page: #121212;
+
+// SecuriTea Brand Colors (work in both modes)
+$teal: #008080;
+$deep-blue: #003366;
+$orange: #ff8c42;
+$leaf-green: #26a69a;
+
+// Dark mode specific overrides
+body.body--dark {
+  // Background colors
+  --q-dark: #1a1a1a;
+  --q-dark-page: #0f0f0f;
+
+  // Card and surface colors
+  --card-bg: #1e1e1e;
+  --card-border: rgba(255, 255, 255, 0.1);
+
+  // Text colors
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
+
+  // SecuriTea brand colors adjusted for dark mode
+  --teal-dark: #00a8a8;
+  --deep-blue-dark: #0066cc;
+  --orange-dark: #ffa366;
+
+  // Accent colors
+  --accent-bg: rgba(0, 128, 128, 0.15);
+  --accent-border: rgba(0, 128, 128, 0.3);
+
+  // Shadow for depth
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+// Light mode specific overrides
+body.body--light {
+  --card-bg: #ffffff;
+  --card-border: rgba(226, 232, 240, 0.6);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+
+  --teal-light: #008080;
+  --deep-blue-light: #003366;
+  --orange-light: #ff8c42;
+
+  --accent-bg: rgba(0, 128, 128, 0.04);
+  --accent-border: rgba(0, 128, 128, 0.2);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}

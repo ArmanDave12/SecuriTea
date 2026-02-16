@@ -146,7 +146,7 @@ const useAuth = () => {
           return modifiedCount
         } else {
           const updateData = {
-            profileImage: data.profileImage,
+            fingerprint: data.fingerprint,
             synced: false,
           }
           const modifiedCount = await dexieDB.users
@@ -157,11 +157,11 @@ const useAuth = () => {
             })
           const updatedUser = {
             ...currentUser,
-            profileImage: updateData.profileImage,
+            fingerprint: updateData.fingerprint,
             newPin: undefined,
           }
           localStorage.setItem('loggedInUser', JSON.stringify(updatedUser))
-          success('Profile image updated successfully!')
+          success('Fingerprint setting updated successfully!')
           return modifiedCount
         }
         // const modifiedCount = await dexieDB.users
