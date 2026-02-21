@@ -694,7 +694,7 @@ const deleteSelectedCredential = async () => {
 
 // Password generator event handlers
 const onPasswordGenerated = (password) => {
-  console.log('Password generated:', password)
+  // console.log('Password generated:', password)
 }
 
 const onPasswordCopied = (password) => {

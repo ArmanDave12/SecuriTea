@@ -5,6 +5,17 @@ import { db as dexieDB } from 'src/boot/dexie'
 import { firebaseConnected } from 'src/boot/firebaseConnection'
 import { db as realtimeDB } from 'src/boot/firebase'
 
+function sanitizeFirebaseKey(key) {
+  if (!key) return 'unknown'
+  return key
+    .replace(/\./g, ',') // Replace . with ,
+    .replace(/#/g, '_') // Replace # with _
+    .replace(/\$/g, '_') // Replace $ with _
+    .replace(/\[/g, '_') // Replace [ with _
+    .replace(/\]/g, '_') // Replace ] with _
+    .replace(/\//g, '_') // Replace / with _
+}
+
 export function useSync() {
   //   const realtimeDB = getDatabase()
 
@@ -33,37 +44,38 @@ export function useSync() {
 
       for (const user of unsyncedUsers) {
         try {
-          // Check if user has an original ID (meaning name was changed)
-          if (user.originalId && user.originalId !== user.id) {
-            // Delete the old Firebase entry
-            const oldUserRef = ref(realtimeDB, `users/${user.originalId}`)
+          // Sanitize the user ID for Firebase
+          const sanitizedId = sanitizeFirebaseKey(user.id)
+          const sanitizedOriginalId = user.originalId ? sanitizeFirebaseKey(user.originalId) : null
+
+          // Check if user has an original ID
+          if (sanitizedOriginalId && sanitizedOriginalId !== sanitizedId) {
+            const oldUserRef = ref(realtimeDB, `users/${sanitizedOriginalId}`)
             await remove(oldUserRef)
-            console.log(`[Sync] Removed old user entry: ${user.originalId}`)
+            console.log(`[Sync] Removed old user entry: ${sanitizedOriginalId}`)
           }
 
           // Create/update the new Firebase entry
-          const newUserRef = ref(realtimeDB, `users/${user.id}`)
+          const newUserRef = ref(realtimeDB, `users/${sanitizedId}`)
           await set(newUserRef, {
-            id: user.id,
+            id: user.id, // Keep original ID in data
             nickname: user.nickname,
             pin: user.pin,
             createdAt: user.createdAt,
           })
 
-          // Mark as synced and remove originalId
           await dexieDB.users.where('id').equals(user.id).modify({
             synced: true,
-            originalId: undefined, // Clean up the tracking field
+            originalId: undefined,
           })
 
-          console.log(`[Sync] Synced user: ${user.nickname} with ID: ${user.id}`)
+          console.log(`[Sync] Synced user: ${user.nickname} with ID: ${sanitizedId}`)
         } catch (err) {
           console.error('[Sync] Failed to sync user:', user.nickname, err)
         }
       }
     } catch (err) {
       console.error('[Sync] Failed to get unsynced users:', err)
-      return
     }
   }
 

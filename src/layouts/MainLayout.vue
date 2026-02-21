@@ -40,6 +40,15 @@
           <!-- On mobile, just show avatar and dropdown -->
           <div class="row items-center no-wrap">
             <!-- User avatar with dropdown menu -->
+            <div class="user-avatar-wrapper">
+              <q-btn
+                flat
+                round
+                icon="brightness_4"
+                @click="toggleDarkMode"
+                class="dark-mode-toggle"
+              />
+            </div>
             <q-btn flat round class="user-btn">
               <q-avatar class="user-avatar" text-color="white" size="28px">
                 {{ currentUser.nickname ? currentUser.nickname.charAt(0).toUpperCase() : 'U' }}
@@ -196,7 +205,8 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import useAuth from 'src/composables/useAuth'
-
+import { useDarkMode } from 'src/composables/useDarkMode'
+const { toggleDarkMode } = useDarkMode()
 const $q = useQuasar()
 const router = useRouter()
 const { getCurrentUser, logout } = useAuth()

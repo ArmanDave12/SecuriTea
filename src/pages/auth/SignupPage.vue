@@ -42,13 +42,16 @@
                   outlined
                   dense
                   class="custom-input"
-                  :rules="[(val) => !!val || 'Nickname is required']"
+                  :rules="nicknameRules"
+                  @update:model-value="validateNickname"
                 >
                   <template v-slot:prepend>
                     <q-icon name="person" class="input-icon" size="sm" />
                   </template>
                   <template v-slot:hint>
-                    <span class="input-hint">This will be your display name</span>
+                    <span class="input-hint"
+                      >Only letters, numbers, dash, and underscore allowed</span
+                    >
                   </template>
                 </q-input>
               </div>
@@ -147,9 +150,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useQuasar } from 'quasar'
 import useAuth from 'src/composables/useAuth'
 
 const router = useRouter()
+const $q = useQuasar()
 const { signup, loading } = useAuth()
 
 const nickname = ref('')
@@ -158,6 +163,36 @@ const confirmPin = ref('')
 const isPinVisible = ref(false)
 const isLoading = loading
 
+// Firebase invalid characters: . # $ [ ] /
+const INVALID_FIREBASE_CHARS = /[.#$[\]/]/
+
+// Validation rules for nickname
+const nicknameRules = [
+  (val) => !!val || 'Nickname is required',
+  (val) => val.length >= 3 || 'Nickname must be at least 3 characters',
+  (val) => val.length <= 20 || 'Nickname must be 20 characters or less',
+  (val) => !INVALID_FIREBASE_CHARS.test(val) || 'Cannot contain . # $ [ ] / characters',
+  (val) =>
+    /^[a-zA-Z0-9_-]+$/.test(val) || 'Only letters, numbers, dash (-), and underscore (_) allowed',
+  (val) => !val.includes('@') || 'Email addresses are not allowed as nicknames',
+]
+
+// Real-time validation and sanitization
+const validateNickname = (value) => {
+  // Auto-remove invalid characters as user types
+  if (value && INVALID_FIREBASE_CHARS.test(value)) {
+    nickname.value = value.replace(INVALID_FIREBASE_CHARS, '')
+
+    $q.notify({
+      type: 'warning',
+      message: 'Invalid characters removed',
+      caption: 'Please use only letters, numbers, dash, and underscore',
+      position: 'top',
+      timeout: 2000,
+    })
+  }
+}
+
 // Enhanced PIN visibility toggle with animation feedback
 const togglePinVisibility = () => {
   isPinVisible.value = !isPinVisible.value
@@ -165,14 +200,68 @@ const togglePinVisibility = () => {
 
 // Handle form submission
 const onSubmit = async () => {
-  // Basic front-end validation
-  if (!nickname.value || nickname.value.length < 3) return
-  if (!pin.value || pin.value.length !== 4) return
-  if (pin.value !== confirmPin.value) return
+  // Additional front-end validation before submission
+  if (!nickname.value || nickname.value.length < 3) {
+    $q.notify({
+      type: 'negative',
+      message: 'Invalid nickname',
+      caption: 'Nickname must be at least 3 characters',
+      position: 'top',
+    })
+    return
+  }
+
+  // Check for invalid characters one more time
+  if (INVALID_FIREBASE_CHARS.test(nickname.value)) {
+    $q.notify({
+      type: 'negative',
+      message: 'Invalid characters in nickname',
+      caption: 'Cannot contain . # $ [ ] / characters',
+      position: 'top',
+    })
+    return
+  }
+
+  // Check for email format
+  if (nickname.value.includes('@')) {
+    $q.notify({
+      type: 'negative',
+      message: 'Email not allowed',
+      caption: 'Please use a nickname, not an email address',
+      position: 'top',
+    })
+    return
+  }
+
+  if (!pin.value || pin.value.length !== 4) {
+    $q.notify({
+      type: 'negative',
+      message: 'Invalid PIN',
+      caption: 'PIN must be exactly 4 characters',
+      position: 'top',
+    })
+    return
+  }
+
+  if (pin.value !== confirmPin.value) {
+    $q.notify({
+      type: 'negative',
+      message: 'PINs do not match',
+      caption: 'Please make sure both PINs are the same',
+      position: 'top',
+    })
+    return
+  }
 
   // Call composable signup (auto handles QNotify)
   const newUser = await signup(nickname.value, pin.value)
   if (newUser) {
+    $q.notify({
+      type: 'positive',
+      message: 'Account created successfully!',
+      caption: 'You can now log in',
+      position: 'top',
+    })
     router.push('/login') // navigate after successful signup
   }
 }
